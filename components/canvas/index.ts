@@ -16,6 +16,8 @@ export type { IsometricCanvasProps } from "./IsometricCanvas";
 export { IsometricCamera } from "./IsometricCamera";
 export { SceneLighting } from "./SceneLighting";
 export { BaseGrid } from "./BaseGrid";
+export { CyberGrid } from "./CyberGrid";
 export { ProjectNode } from "./ProjectNode";
 export type { ProjectNodeProps } from "./ProjectNode";
+
 

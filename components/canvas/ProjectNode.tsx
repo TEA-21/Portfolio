@@ -4,38 +4,6 @@
  * components/canvas/ProjectNode.tsx
  *
  * An interactive hexagonal module representing a portfolio project.
- *
- * VISUAL ANATOMY
- * ──────────────
- *  ┌──────────────────────────────────┐
- *  │   [Label text]  ← Drei <Text>   │  floating above, billboard-locked
- *  │                                  │
- *  │  ╔══════╗  ← hex body           │  CylinderGeometry(6 sides)
- *  │  ║ ring ║  ← accent ring        │  slightly larger, thin torus-like cyl
- *  │  ╚══════╝                        │
- *  │   [glow plane] ← ground halo    │  semi-transparent circle at y = -0.01
- *  └──────────────────────────────────┘
- *
- * INTERACTION MODEL
- * ─────────────────
- *  idle       → subtle emissive pulse via useFrame sine wave
- *  hovered    → emissive snaps to cyan-focus (#38bdf8), cursor → pointer,
- *               body scales up slightly, label brightens
- *  clicked    → dispatches to Zustand:
- *                 setCamera({ x: position[0], z: position[2] })
- *                 setZoom(2.5)
- *                 setFocusedNodeId(id)
- *                 setInspection()
- *
- * PERFORMANCE NOTES
- * ─────────────────
- *  • `useRef` for all per-frame mutations — no setState in the render loop.
- *  • `useCallback` on event handlers to prevent re-creation.
- *  • Emissive animation uses lerp so transitions feel physical, not snappy.
- *  • Text uses `fontSize` relative to scene units; font is loaded once by
- *    Drei's internal cache (troika-three-text).
- *  • Hover/focus state managed with plain React `useState` — one boolean
- *    re-render per enter/leave is acceptable and idiomatic R3F.
  */
 
 import {
@@ -46,9 +14,9 @@ import {
   type JSX,
 } from "react";
 import { useFrame } from "@react-three/fiber";
-import { Text, Float, Center } from "@react-three/drei";
+import { Text, Float } from "@react-three/drei";
 import * as THREE from "three";
-import { usePortfolioStore } from "@/lib/store";
+import { usePortfolioStore, type ProjectCategory } from "@/lib/store";
 
 // ---------------------------------------------------------------------------
 // Theme colours (matching Tailwind config, in linear-space hex)
@@ -62,6 +30,7 @@ const C_RING             = new THREE.Color("#1e3a4a");   // slightly lighter nav
 const C_GLOW             = new THREE.Color("#38bdf8");   // cyan for ground halo
 const C_LABEL_IDLE       = new THREE.Color("#7dd3fc");   // sky-300
 const C_LABEL_HOVER      = new THREE.Color("#e0f2fe");   // sky-50
+const C_LABEL_DIMMED     = new THREE.Color("#334155");   // slate-700
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -78,7 +47,6 @@ const HEX_HEIGHT = 0.18;
 
 /** Accent ring outer/inner radii. */
 const RING_OUTER = 0.78;
-const RING_INNER = 0.72;
 const RING_HEIGHT = 0.22;
 
 /** Zoom level dispatched when a node is clicked. */
@@ -94,6 +62,9 @@ export interface ProjectNodeProps {
 
   /** Display label rendered above the node. */
   label: string;
+
+  /** Project category for filtering. */
+  category?: ProjectCategory;
 
   /**
    * World-space position [x, y, z].
@@ -115,21 +86,28 @@ export interface ProjectNodeProps {
 function GroundHalo({
   hovered,
   isFocused,
+  isDimmed,
 }: {
   hovered: boolean;
   isFocused: boolean;
+  isDimmed: boolean;
 }) {
   const matRef = useRef<THREE.MeshBasicMaterial>(null);
 
   useFrame(() => {
     if (!matRef.current) return;
-    const targetOpacity = isFocused ? 0.25 : hovered ? 0.18 : 0.06;
+    const targetOpacity = isDimmed
+      ? 0.01
+      : isFocused
+      ? 0.25
+      : hovered
+      ? 0.18
+      : 0.06;
     matRef.current.opacity +=
       (targetOpacity - matRef.current.opacity) * 0.1;
   });
 
   return (
-    // Flat circle on the XZ plane, just below the hex body
     <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.001, 0]}>
       <circleGeometry args={[HEX_RADIUS * 1.6, 32]} />
       <meshBasicMaterial
@@ -152,24 +130,23 @@ function NodeLabel({
   label,
   hovered,
   isFocused,
+  isDimmed,
 }: {
   label: string;
   hovered: boolean;
   isFocused: boolean;
+  isDimmed: boolean;
 }) {
-  // Drive label colour via a lerped THREE.Color inside useFrame,
-  // then write it to the <Text> color prop each tick via a ref to
-  // the troika mesh (which exposes a `color` property directly).
-  //
-  // We use `any` for the troika ref type — Drei v9 does not export
-  // the underlying troika-three-text instance type, and the @ts-expect-error
-  // directive would be flagged as unused if the type accidentally resolves.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const textRef = useRef<any>(null);
   const lerpedColor = useRef(C_LABEL_IDLE.clone());
 
   useFrame(() => {
-    const target = hovered || isFocused ? C_LABEL_HOVER : C_LABEL_IDLE;
+    const target = isDimmed
+      ? C_LABEL_DIMMED
+      : hovered || isFocused
+      ? C_LABEL_HOVER
+      : C_LABEL_IDLE;
     lerpedColor.current.lerp(target, 0.1);
     if (textRef.current) {
       textRef.current.color = lerpedColor.current;
@@ -177,11 +154,10 @@ function NodeLabel({
   });
 
   return (
-    // Float gives a gentle vertical bob without any extra state
     <Float
-      speed={1.4}
+      speed={isDimmed ? 0.5 : 1.4}
       rotationIntensity={0}
-      floatIntensity={0.3}
+      floatIntensity={isDimmed ? 0.1 : 0.3}
       floatingRange={[-0.04, 0.04]}
     >
       <Text
@@ -211,17 +187,18 @@ function NodeLabel({
 function HexBody({
   hovered,
   isFocused,
+  isDimmed,
   accentColor,
 }: {
   hovered: boolean;
   isFocused: boolean;
+  isDimmed: boolean;
   accentColor?: string;
 }) {
   const bodyRef    = useRef<THREE.Mesh>(null);
   const bodyMatRef = useRef<THREE.MeshStandardMaterial>(null);
   const ringMatRef = useRef<THREE.MeshStandardMaterial>(null);
 
-  // Memoize the focused emissive so it reacts to the accentColor prop
   const focusedEmissive = useMemo(
     () => (accentColor ? new THREE.Color(accentColor) : C_FOCUSED_EMISSIVE),
     [accentColor]
@@ -233,39 +210,59 @@ function HexBody({
     // ── Body emissive ─────────────────────────────────────────────────
     if (bodyMatRef.current) {
       let targetEmissive: THREE.Color;
-      if (isFocused) {
+      if (isDimmed) {
+        targetEmissive = new THREE.Color("#05080f");
+      } else if (isFocused) {
         targetEmissive = focusedEmissive;
       } else if (hovered) {
         targetEmissive = C_HOVER_EMISSIVE;
       } else {
-        // Idle pulse: slow sine wave on the dark base
         const pulse = (Math.sin(t * 1.6) * 0.5 + 0.5) * 0.12;
         targetEmissive = C_IDLE_EMISSIVE.clone().multiplyScalar(1 + pulse * 4);
       }
       bodyMatRef.current.emissive.lerp(targetEmissive, 0.08);
 
-      // Emissive intensity
-      const targetIntensity = isFocused ? 1.2 : hovered ? 0.9 : 0.3;
+      const targetIntensity = isDimmed
+        ? 0.05
+        : isFocused
+        ? 1.2
+        : hovered
+        ? 0.9
+        : 0.3;
       bodyMatRef.current.emissiveIntensity +=
         (targetIntensity - bodyMatRef.current.emissiveIntensity) * 0.08;
     }
 
     // ── Ring emissive ─────────────────────────────────────────────────
     if (ringMatRef.current) {
-      const ringTarget = isFocused
+      const ringTarget = isDimmed
+        ? new THREE.Color("#05080f")
+        : isFocused
         ? focusedEmissive
         : hovered
         ? C_HOVER_EMISSIVE
         : C_IDLE_EMISSIVE;
       ringMatRef.current.emissive.lerp(ringTarget, 0.1);
-      const ringIntensity = isFocused ? 2.0 : hovered ? 1.4 : 0.2;
+      const ringIntensity = isDimmed
+        ? 0.05
+        : isFocused
+        ? 2.0
+        : hovered
+        ? 1.4
+        : 0.2;
       ringMatRef.current.emissiveIntensity +=
         (ringIntensity - ringMatRef.current.emissiveIntensity) * 0.1;
     }
 
     // ── Body scale on hover ───────────────────────────────────────────
     if (bodyRef.current) {
-      const targetScale = hovered ? 1.07 : isFocused ? 1.05 : 1.0;
+      const targetScale = isDimmed
+        ? 0.92
+        : hovered
+        ? 1.07
+        : isFocused
+        ? 1.05
+        : 1.0;
       bodyRef.current.scale.lerp(
         new THREE.Vector3(targetScale, targetScale, targetScale),
         0.1
@@ -282,11 +279,6 @@ function HexBody({
         castShadow
         receiveShadow
       >
-        {/*
-         * CylinderGeometry(radiusTop, radiusBottom, height,
-         *   radialSegments, heightSegments, openEnded)
-         * radialSegments=6 → hexagonal prism
-         */}
         <cylinderGeometry
           args={[HEX_RADIUS, HEX_RADIUS, HEX_HEIGHT, HEX_SEGMENTS, 1, false]}
         />
@@ -300,7 +292,7 @@ function HexBody({
         />
       </mesh>
 
-      {/* Accent ring — slightly larger, very thin */}
+      {/* Accent ring */}
       <mesh position={[0, RING_HEIGHT / 2 - 0.01, 0]}>
         <cylinderGeometry
           args={[RING_OUTER, RING_OUTER, RING_HEIGHT, HEX_SEGMENTS, 1, true]}
@@ -314,17 +306,17 @@ function HexBody({
           metalness={0.9}
           side={THREE.BackSide}
           transparent
-          opacity={0.85}
+          opacity={isDimmed ? 0.2 : 0.85}
         />
       </mesh>
 
-      {/* Top cap ring — thin disc at the top face edge */}
+      {/* Top cap ring */}
       <mesh position={[0, HEX_HEIGHT + 0.001, 0]} rotation={[-Math.PI / 2, 0, 0]}>
         <ringGeometry args={[HEX_RADIUS - 0.04, HEX_RADIUS, HEX_SEGMENTS]} />
         <meshStandardMaterial
           color={C_RING}
           emissive={C_HOVER_EMISSIVE}
-          emissiveIntensity={hovered || isFocused ? 0.6 : 0.08}
+          emissiveIntensity={isDimmed ? 0.02 : hovered || isFocused ? 0.6 : 0.08}
           roughness={0.1}
           metalness={1.0}
         />
@@ -340,21 +332,22 @@ function HexBody({
 export function ProjectNode({
   id,
   label,
+  category,
   position,
   accentColor,
 }: ProjectNodeProps): JSX.Element {
   const [hovered, setHovered] = useState(false);
 
-  // Fine-grained selectors — each re-renders only when its slice changes
   const focusedNodeId = usePortfolioStore((s) => s.focusedNodeId);
+  const activeCategories = usePortfolioStore((s) => s.activeCategories);
   const setCamera     = usePortfolioStore((s) => s.setCamera);
   const setZoom       = usePortfolioStore((s) => s.setZoom);
   const setFocusedNodeId = usePortfolioStore((s) => s.setFocusedNodeId);
   const setInspection = usePortfolioStore((s) => s.setInspection);
 
   const isFocused = focusedNodeId === id;
+  const isDimmed = category ? !activeCategories.includes(category) : false;
 
-  // ── Pointer cursor management ─────────────────────────────────────────────
   const onPointerEnter = useCallback(() => {
     setHovered(true);
     document.body.style.cursor = "pointer";
@@ -365,21 +358,13 @@ export function ProjectNode({
     document.body.style.cursor = "auto";
   }, []);
 
-  // ── Click → Zustand dispatch ─────────────────────────────────────────────
   const onClick = useCallback(
     (e: { stopPropagation: () => void }) => {
-      e.stopPropagation(); // prevent event bubbling to canvas background
+      e.stopPropagation();
 
-      // Pan camera to this node's XZ position
       setCamera({ x: position[0], z: position[2] });
-
-      // Zoom in for inspection
       setZoom(FOCUS_ZOOM);
-
-      // Record which node is focused
       setFocusedNodeId(id);
-
-      // Transition global mode to inspection
       setInspection();
     },
     [id, position, setCamera, setZoom, setFocusedNodeId, setInspection]
@@ -392,18 +377,14 @@ export function ProjectNode({
       onPointerLeave={onPointerLeave}
       onClick={onClick}
     >
-      {/* Hex body + ring */}
       <HexBody
         hovered={hovered}
         isFocused={isFocused}
+        isDimmed={isDimmed}
         accentColor={accentColor}
       />
-
-      {/* Ground glow halo */}
-      <GroundHalo hovered={hovered} isFocused={isFocused} />
-
-      {/* Floating label */}
-      <NodeLabel label={label} hovered={hovered} isFocused={isFocused} />
+      <GroundHalo hovered={hovered} isFocused={isFocused} isDimmed={isDimmed} />
+      <NodeLabel label={label} hovered={hovered} isFocused={isFocused} isDimmed={isDimmed} />
     </group>
   );
 }

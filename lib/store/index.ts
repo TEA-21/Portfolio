@@ -8,6 +8,7 @@
 // Store types and factory (safe to import in Server Components for typing)
 export type {
   InteractionMode,
+  ProjectCategory,
   CameraCoordinates,
   PortfolioState,
   PortfolioActions,

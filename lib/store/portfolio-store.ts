@@ -18,6 +18,12 @@ import { createStore } from "zustand/vanilla";
 /** The four gamified interaction modes of the portfolio. */
 export type InteractionMode = "idle" | "navigation" | "speedRun" | "inspection";
 
+/** Project filter categories. */
+export type ProjectCategory =
+  | "AI Automation"
+  | "Security & Systems"
+  | "Full-Stack Architecture";
+
 /** World-space camera position. */
 export interface CameraCoordinates {
   x: number;
@@ -34,8 +40,9 @@ export interface PortfolioState {
   camera: CameraCoordinates;
   zoom: number;
 
-  // --- Project focus ---
+  // --- Project focus & filtering ---
   focusedNodeId: string | null;
+  activeCategories: ProjectCategory[];
 }
 
 /** All actions available on the portfolio store. */
@@ -56,6 +63,10 @@ export interface PortfolioActions {
 
   // Project focus
   setFocusedNodeId: (id: string | null) => void;
+
+  // Category filtering
+  toggleCategory: (category: ProjectCategory) => void;
+  setActiveCategories: (categories: ProjectCategory[]) => void;
 }
 
 /** Combined store type exposed to consumers. */
@@ -67,12 +78,18 @@ export type PortfolioStore = PortfolioState & PortfolioActions;
 
 const DEFAULT_CAMERA: CameraCoordinates = { x: 0, y: 0, z: 10 };
 const DEFAULT_ZOOM = 1;
+const ALL_CATEGORIES: ProjectCategory[] = [
+  "AI Automation",
+  "Security & Systems",
+  "Full-Stack Architecture",
+];
 
 export const DEFAULT_PORTFOLIO_STATE: PortfolioState = {
   mode: "idle",
   camera: DEFAULT_CAMERA,
   zoom: DEFAULT_ZOOM,
   focusedNodeId: null,
+  activeCategories: ALL_CATEGORIES,
 };
 
 // ---------------------------------------------------------------------------
@@ -120,6 +137,20 @@ export function createPortfolioStore(
     // Project focus actions
     // -----------------------------------------------------------------------
     setFocusedNodeId: (id) => set({ focusedNodeId: id }),
+
+    // -----------------------------------------------------------------------
+    // Category filtering actions
+    // -----------------------------------------------------------------------
+    toggleCategory: (category) =>
+      set((state) => {
+        const exists = state.activeCategories.includes(category);
+        const updated = exists
+          ? state.activeCategories.filter((c) => c !== category)
+          : [...state.activeCategories, category];
+        return { activeCategories: updated };
+      }),
+
+    setActiveCategories: (categories) => set({ activeCategories: categories }),
   }));
 }
 

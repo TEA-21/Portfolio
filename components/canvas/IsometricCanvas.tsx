@@ -43,7 +43,7 @@ import { Canvas } from "@react-three/fiber";
 import * as THREE from "three";
 import { IsometricCamera } from "./IsometricCamera";
 import { SceneLighting } from "./SceneLighting";
-import { BaseGrid } from "./BaseGrid";
+import { CyberGrid } from "./CyberGrid";
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -113,7 +113,7 @@ export function IsometricCanvas({ children }: IsometricCanvasProps) {
         linear
         // Transparent background — page background (slate-dark) shows through
         gl={{ alpha: true, antialias: true }}
-        style={{ width: "100%", height: "100%" }}
+        style={{ width: "100%", height: "100%", pointerEvents: "auto" }}
         onCreated={({ camera, size }) => {
           // Set the initial orthographic frustum based on viewport aspect ratio
           if (camera instanceof THREE.OrthographicCamera) {
@@ -132,8 +132,8 @@ export function IsometricCanvas({ children }: IsometricCanvasProps) {
         {/* Lighting rig */}
         <SceneLighting />
 
-        {/* Base grid — foundational cyberpunk terminal floor */}
-        <BaseGrid />
+        {/* Cyberpunk terminal grid — foundational XZ floor */}
+        <CyberGrid />
 
         {/* Optional scene children (nodes, particles, etc.) */}
         {children}
