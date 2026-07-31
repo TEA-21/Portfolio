@@ -15,6 +15,7 @@
 
 import { MissionControl } from "./MissionControl";
 import { InspectionOverlay } from "./InspectionOverlay";
+import { MascotChat } from "./MascotChat";
 
 export function HUDLayer() {
   return (
@@ -24,6 +25,10 @@ export function HUDLayer() {
 
       {/* Dynamic Project Inspection Details Overlay */}
       <InspectionOverlay />
+
+      {/* ARIA AI Mascot Assistant Chat Bridge */}
+      <MascotChat />
     </div>
   );
 }
+
