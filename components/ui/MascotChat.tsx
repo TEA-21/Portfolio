@@ -18,41 +18,33 @@
  *  3. `setFocusedNodeId(nodeId)` - sets active node focus.
  *  4. `setInspection()` - switches global interaction state mode to 'inspection'.
  *
- * SPEED RUN TOUR GUIDE SYNCHRONIZATION
- * ─────────────────────────────────────
+ * SPEED RUN ZERO-LATENCY HARDCODED TOUR GUIDE
+ * ────────────────────────────────────────────
  * When a Speed Run tour is active, this component watches `currentStepIndex`
- * from the Zustand store. Each time the step index changes, it:
- *  1. Auto-opens the chat panel.
- *  2. Sends a pre-defined tour guide prompt to the LLM via `sendMessage`.
- *  3. The LLM streams back a contextual commentary on the focused node.
- * This makes ARIA act as an automated tour guide without the user typing.
+ * and `focusedNodeId` from the Zustand store. Each time the step index changes,
+ * it automatically appends a pre-defined hardcoded system message to the chat UI
+ * INSTANTLY (0ms latency, zero LLM API calls) as the camera begins panning.
  */
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import { usePortfolioStore } from "@/lib/store";
-import type { EvaluationRole } from "@/lib/store";
 
 // ---------------------------------------------------------------------------
-// Tour guide prompt templates per node
+// Hardcoded Zero-Latency Tour Guide Messages
 // ---------------------------------------------------------------------------
 
-/** Pre-defined tour commentary prompts keyed by nodeId. */
-const TOUR_GUIDE_PROMPTS: Record<string, string> = {
+const SPEED_RUN_HARDCODED_MESSAGES: Record<string, string> = {
   parleylab:
-    "We're now viewing the ParleyLab project node. Act as a concise tour guide and highlight: (1) the automated LLM fallback routing between OpenRouter and Ollama, (2) the Zustand state machine managing negotiation session state, and (3) the interactive adversarial debate panels. Keep your response to 3 punchy bullet points.",
+    "Currently viewing ParleyLab: An AI fallback routing system featuring interactive negotiation panels and Zustand state management.",
   zerotrust:
-    "We're now viewing the ZeroTrust Finance project node. Act as a concise tour guide and highlight: (1) the cross-platform Flutter/Dart mobile architecture, (2) the Prisma ORM type-safe database layer, and (3) the real-time transaction anomaly telemetry dashboard. Keep your response to 3 punchy bullet points.",
+    "Focusing on ZeroTrust Finance Tracker: A cross-platform financial application built with Flutter, backed by Prisma and transaction telemetry.",
   mpmc:
-    "We're now viewing the MPMC System project node. Act as a concise tour guide and highlight: (1) the ESP32 microcontroller hardware integration and MQTT message bus, (2) the YOLOv8 edge inference for predictive queue analytics, and (3) the Python backend concurrency model. Keep your response to 3 punchy bullet points.",
+    "Inspecting the MPMC Project: A hardware-integrated embedded ML system utilizing ESP32, Python, and YOLOv8 predictive analytics.",
   civicguard:
-    "We're now viewing the CivicGuard project node. Act as a concise tour guide and highlight: (1) the WebAuthn biometric passkey authentication flow, (2) the Solidity smart contracts for immutable audit logs, and (3) the DigiLocker API integration for verifiable credentials. Keep your response to 3 punchy bullet points.",
+    "Arriving at Civic Guard: A decentralized identity security platform utilizing WebAuthn biometrics and Solidity smart contracts.",
 };
-
-/** Fallback prompt when nodeId is not found. */
-const FALLBACK_TOUR_PROMPT =
-  "Briefly introduce yourself as ARIA and mention that you are the portfolio AI tour guide. Invite the user to ask about any of the four projects: ParleyLab, ZeroTrust Finance, MPMC System, or CivicGuard.";
 
 // ---------------------------------------------------------------------------
 // Camera pan position lookup
@@ -71,10 +63,10 @@ export function MascotChat() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const processedToolCalls = useRef<Set<string>>(new Set());
 
-  // Track whether a tour guide message has been sent for each step
+  // Track whether a tour message has been appended for each step
   const lastTourStepSent = useRef<number>(-1);
 
-  // Store state
+  // Store state & actions
   const setCamera = usePortfolioStore((s) => s.setCamera);
   const setZoom = usePortfolioStore((s) => s.setZoom);
   const setFocusedNodeId = usePortfolioStore((s) => s.setFocusedNodeId);
@@ -106,7 +98,7 @@ export function MascotChat() {
   );
 
   // Initialize Vercel AI SDK useChat
-  const { messages, sendMessage, status } = useChat({
+  const { messages, setMessages, sendMessage, status } = useChat({
     transport: new DefaultChatTransport({ api: "/api/chat" }),
     onToolCall({ toolCall }) {
       console.log("[MascotChat] onToolCall received:", toolCall);
@@ -163,7 +155,7 @@ export function MascotChat() {
   }, [messages, executeFocusProjectNode]);
 
   // -------------------------------------------------------------------------
-  // Speed Run Tour Guide: auto-send commentary when step index changes
+  // Zero-Latency Speed Run Tour Guide: instantly append hardcoded messages
   // -------------------------------------------------------------------------
   useEffect(() => {
     const isTourActive =
@@ -177,25 +169,27 @@ export function MascotChat() {
     }
 
     const nodeId = speedRunSequence[currentStepIndex] ?? focusedNodeId;
-    if (!nodeId) return;
+    if (!nodeId || !(nodeId in SPEED_RUN_HARDCODED_MESSAGES)) return;
 
-    // Mark this step as sent to prevent double-firing
+    // Mark this step index as processed
     lastTourStepSent.current = currentStepIndex;
 
-    // Auto-open the chat so evaluators see the commentary
+    // Auto-open chat terminal instantly
     setIsOpen(true);
 
-    // Small delay to let the camera lerp start before sending the prompt
-    const timer = setTimeout(() => {
-      const prompt = TOUR_GUIDE_PROMPTS[nodeId] ?? FALLBACK_TOUR_PROMPT;
-      console.log(
-        `[MascotChat] Speed Run tour step ${currentStepIndex} — sending guide prompt for: ${nodeId}`
-      );
-      sendMessage({ text: prompt });
-    }, 600);
+    const messageText = SPEED_RUN_HARDCODED_MESSAGES[nodeId];
 
-    return () => clearTimeout(timer);
-  }, [currentStepIndex, activeRole, speedRunSequence, focusedNodeId, sendMessage]);
+    // Append hardcoded message instantly to the chat UI without calling LLM API
+    setMessages((prevMessages) => [
+      ...prevMessages,
+      {
+        id: `speedrun-${nodeId}-${currentStepIndex}-${Date.now()}`,
+        role: "assistant",
+        content: messageText,
+        parts: [{ type: "text", text: messageText }],
+      } as any,
+    ]);
+  }, [currentStepIndex, activeRole, speedRunSequence, focusedNodeId, setMessages]);
 
   // Reset tour step tracking when a fresh tour starts (activeRole changes)
   useEffect(() => {
@@ -258,11 +252,15 @@ export function MascotChat() {
                   : (m as any).content;
 
                 // Don't render empty messages (e.g. pure tool-call assistant turns)
-                if (!textContent && !m.parts?.some((p: any) =>
-                  p.type === "tool-call" ||
-                  p.type === "dynamic-tool" ||
-                  (typeof p.type === "string" && p.type.startsWith("tool-"))
-                )) {
+                if (
+                  !textContent &&
+                  !m.parts?.some(
+                    (p: any) =>
+                      p.type === "tool-call" ||
+                      p.type === "dynamic-tool" ||
+                      (typeof p.type === "string" && p.type.startsWith("tool-"))
+                  )
+                ) {
                   return null;
                 }
 
@@ -364,10 +362,6 @@ export function MascotChat() {
         <span className="text-xs font-bold tracking-wider uppercase drop-shadow-[0_0_8px_rgba(56,189,248,0.5)]">
           {isOpen ? "CLOSE ARIA AI" : "ARIA AI MASCOT"}
         </span>
-        {/* Unread indicator dot when tour is running and chat is closed */}
-        {!isOpen && activeRole !== null && isLoading && (
-          <span className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-amber-caution border-2 border-slate-dark animate-pulse" />
-        )}
       </button>
     </div>
   );
