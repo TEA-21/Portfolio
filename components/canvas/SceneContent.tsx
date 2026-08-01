@@ -9,6 +9,7 @@
  */
 
 import { ProjectNode } from "./ProjectNode";
+import { SpeedRunController } from "./SpeedRunController";
 import type { ProjectCategory } from "@/lib/store";
 
 interface ProjectConfig {
@@ -29,6 +30,9 @@ const PROJECTS: ProjectConfig[] = [
 export function SceneContent() {
   return (
     <>
+      {/* Speed Run automated tour controller — no visual output */}
+      <SpeedRunController />
+
       {PROJECTS.map((proj) => (
         <ProjectNode
           key={proj.id}
@@ -41,3 +45,4 @@ export function SceneContent() {
     </>
   );
 }
+

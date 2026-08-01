@@ -165,6 +165,16 @@ export function InspectionOverlay() {
   const resetCamera   = usePortfolioStore((s) => s.resetCamera);
   const setFocusedNodeId = usePortfolioStore((s) => s.setFocusedNodeId);
 
+  const speedRunSequence = usePortfolioStore((s) => s.speedRunSequence);
+  const currentStepIndex = usePortfolioStore((s) => s.currentStepIndex);
+  const advanceSpeedRun  = usePortfolioStore((s) => s.advanceSpeedRun);
+  const activeRole       = usePortfolioStore((s) => s.activeRole);
+
+  const isSpeedRunActive =
+    activeRole != null &&
+    speedRunSequence.length > 0 &&
+    currentStepIndex < speedRunSequence.length;
+
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
@@ -231,22 +241,48 @@ export function InspectionOverlay() {
         {/* Panel container */}
         <div className="rounded-xl border border-cyan-focus/30 bg-slate-dark/95 shadow-[0_0_40px_rgba(56,189,248,0.15)] overflow-hidden">
 
-          {/* ── Top bar: id + close button ─────────────────────────────── */}
+          {/* ── Top bar: id + advance tour + close button ──────────────── */}
           <div className="flex items-center justify-between border-b border-cyan-focus/15 px-5 py-3">
             <div className="flex items-center gap-3 font-mono text-xs text-slate-500">
               <span className="h-2 w-2 rounded-full bg-emerald-highlight animate-pulse" />
               <span>NODE_ID: <span className="text-cyan-focus">{focusedNodeId ?? "NULL"}</span></span>
               <span className="text-slate-700">|</span>
               <span>MODE: <span className="text-emerald-highlight">INSPECTION</span></span>
+              {isSpeedRunActive && (
+                <>
+                  <span className="text-slate-700">|</span>
+                  <span className="text-amber-caution font-bold">
+                    TOUR STEP {currentStepIndex + 1}/{speedRunSequence.length}
+                  </span>
+                </>
+              )}
             </div>
-            <button
-              onClick={handleClose}
-              className="group flex items-center gap-2 rounded-md border border-slate-700/60 bg-slate-900/60 px-3 py-1.5 font-mono text-xs text-slate-400 transition-all duration-150 hover:border-red-500/60 hover:bg-red-950/40 hover:text-red-400 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-red-500"
-            >
-              <span>CLOSE</span>
-              <span className="text-base leading-none group-hover:rotate-90 transition-transform duration-200">×</span>
-            </button>
+
+            <div className="flex items-center gap-2">
+              {isSpeedRunActive && (
+                <button
+                  onClick={() => advanceSpeedRun()}
+                  className="flex items-center gap-2 rounded-md border border-emerald-500/60 bg-emerald-950/40 px-3 py-1.5 font-mono text-xs font-bold text-emerald-highlight transition-all duration-150 hover:bg-emerald-900/60 hover:shadow-[0_0_12px_rgba(16,185,129,0.3)]"
+                >
+                  <span>
+                    {currentStepIndex + 1 < speedRunSequence.length
+                      ? "NEXT PROJECT IN TOUR"
+                      : "FINISH TOUR"}
+                  </span>
+                  <span>&rarr;</span>
+                </button>
+              )}
+
+              <button
+                onClick={handleClose}
+                className="group flex items-center gap-2 rounded-md border border-slate-700/60 bg-slate-900/60 px-3 py-1.5 font-mono text-xs text-slate-400 transition-all duration-150 hover:border-red-500/60 hover:bg-red-950/40 hover:text-red-400 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-red-500"
+              >
+                <span>CLOSE</span>
+                <span className="text-base leading-none group-hover:rotate-90 transition-transform duration-200">×</span>
+              </button>
+            </div>
           </div>
+
 
           {/* ── Two-column content grid ────────────────────────────────── */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-0">

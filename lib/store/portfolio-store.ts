@@ -15,14 +15,25 @@ import { createStore } from "zustand/vanilla";
 // Types
 // ---------------------------------------------------------------------------
 
-/** The four gamified interaction modes of the portfolio. */
-export type InteractionMode = "idle" | "navigation" | "speedRun" | "inspection";
+/** The gamified interaction modes of the portfolio. */
+export type InteractionMode =
+  | "idle"
+  | "navigation"
+  | "speedRun"
+  | "inspection"
+  | "exitActionHub";
 
 /** Project filter categories. */
 export type ProjectCategory =
   | "AI Automation"
   | "Security & Systems"
   | "Full-Stack Architecture";
+
+/** Evaluation focus roles for Speed Run mode. */
+export type EvaluationRole =
+  | "Full-Stack / Systems Engineering"
+  | "AI Tooling"
+  | "Rapid Prototyping";
 
 /** World-space camera position. */
 export interface CameraCoordinates {
@@ -43,6 +54,11 @@ export interface PortfolioState {
   // --- Project focus & filtering ---
   focusedNodeId: string | null;
   activeCategories: ProjectCategory[];
+  activeRole: EvaluationRole | null;
+
+  // --- Speed Run Choreography ---
+  speedRunSequence: string[];
+  currentStepIndex: number;
 }
 
 /** All actions available on the portfolio store. */
@@ -56,6 +72,10 @@ export interface PortfolioActions {
   // Generic setter (useful for middleware / tests)
   setMode: (mode: InteractionMode) => void;
 
+  // Speed run tour actions
+  startSpeedRunTour: (role: EvaluationRole) => void;
+  advanceSpeedRun: () => void;
+
   // Camera actions
   setCamera: (coords: Partial<CameraCoordinates>) => void;
   setZoom: (zoom: number) => void;
@@ -68,6 +88,8 @@ export interface PortfolioActions {
   toggleCategory: (category: ProjectCategory) => void;
   setActiveCategories: (categories: ProjectCategory[]) => void;
 }
+
+
 
 /** Combined store type exposed to consumers. */
 export type PortfolioStore = PortfolioState & PortfolioActions;
@@ -84,12 +106,33 @@ const ALL_CATEGORIES: ProjectCategory[] = [
   "Full-Stack Architecture",
 ];
 
+/**
+ * Camera pan coordinates for each project node.
+ *
+ * IsometricCamera maps:
+ *   store.camera.x  →  panX  (world X axis)
+ *   store.camera.y  →  panY  (world Z axis via targetLookAt.set(panX, 0, panY))
+ *   store.camera.z  →  (unused)
+ *
+ * Node world positions: parleylab(-3,0,3), zerotrust(3,0,3), mpmc(3,0,-3), civicguard(-3,0,-3)
+ * So {x: worldX, y: worldZ} to correctly focus the camera on each node.
+ */
+const NODE_POSITIONS: Record<string, CameraCoordinates> = {
+  parleylab: { x: -3, y: 3, z: 0 },
+  zerotrust: { x:  3, y: 3, z: 0 },
+  mpmc:      { x:  3, y: -3, z: 0 },
+  civicguard: { x: -3, y: -3, z: 0 },
+};
+
 export const DEFAULT_PORTFOLIO_STATE: PortfolioState = {
   mode: "idle",
   camera: DEFAULT_CAMERA,
   zoom: DEFAULT_ZOOM,
   focusedNodeId: null,
   activeCategories: ALL_CATEGORIES,
+  activeRole: null,
+  speedRunSequence: [],
+  currentStepIndex: 0,
 };
 
 // ---------------------------------------------------------------------------
@@ -117,15 +160,76 @@ export function createPortfolioStore(
     // -----------------------------------------------------------------------
     // Interaction mode actions
     // -----------------------------------------------------------------------
-    setIdle: () => set({ mode: "idle" }),
+    setIdle: () =>
+      set({
+        mode: "idle",
+        activeRole: null,
+        speedRunSequence: [],
+        currentStepIndex: 0,
+      }),
     setNavigation: () => set({ mode: "navigation" }),
     setSpeedRun: () => set({ mode: "speedRun" }),
     setInspection: () => set({ mode: "inspection" }),
     setMode: (mode) => set({ mode }),
 
     // -----------------------------------------------------------------------
+    // Speed run tour actions
+    // -----------------------------------------------------------------------
+    startSpeedRunTour: (role: EvaluationRole) => {
+      const roleSequenceMap: Record<EvaluationRole, string[]> = {
+        "AI Tooling": ["parleylab", "mpmc"],
+        "Full-Stack / Systems Engineering": ["mpmc", "zerotrust"],
+        "Rapid Prototyping": ["civicguard", "zerotrust"],
+      };
+
+      const sequence = roleSequenceMap[role] ?? ["parleylab", "mpmc"];
+      const firstNodeId = sequence[0];
+      const coords = NODE_POSITIONS[firstNodeId] ?? DEFAULT_CAMERA;
+
+      set({
+        activeRole: role,
+        speedRunSequence: sequence,
+        currentStepIndex: 0,
+        focusedNodeId: firstNodeId,
+        camera: coords,
+        zoom: 2.5,
+        mode: "inspection",
+      });
+    },
+
+    advanceSpeedRun: () => {
+      set((state) => {
+        const nextIndex = state.currentStepIndex + 1;
+        if (nextIndex >= state.speedRunSequence.length) {
+          // Sequence completed -> transition to exitActionHub
+          return {
+            currentStepIndex: nextIndex,
+            mode: "exitActionHub",
+            focusedNodeId: null,
+            zoom: 1,
+            camera: DEFAULT_CAMERA,
+          };
+        }
+
+        // Move to next node in sequence
+        const nextNodeId = state.speedRunSequence[nextIndex];
+        const coords = NODE_POSITIONS[nextNodeId] ?? DEFAULT_CAMERA;
+
+        return {
+          currentStepIndex: nextIndex,
+          focusedNodeId: nextNodeId,
+          camera: coords,
+          zoom: 2.5,
+          mode: "inspection",
+        };
+      });
+    },
+
+    // -----------------------------------------------------------------------
     // Camera actions
     // -----------------------------------------------------------------------
+
+
     setCamera: (coords) =>
       set((state) => ({ camera: { ...state.camera, ...coords } })),
 

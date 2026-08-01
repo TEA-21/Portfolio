@@ -9,6 +9,7 @@
 export type {
   InteractionMode,
   ProjectCategory,
+  EvaluationRole,
   CameraCoordinates,
   PortfolioState,
   PortfolioActions,

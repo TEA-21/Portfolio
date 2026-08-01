@@ -16,6 +16,8 @@
 import { MissionControl } from "./MissionControl";
 import { InspectionOverlay } from "./InspectionOverlay";
 import { MascotChat } from "./MascotChat";
+import { RoleSelectionModal } from "./RoleSelectionModal";
+import { ExitActionHub } from "./ExitActionHub";
 
 export function HUDLayer() {
   return (
@@ -26,9 +28,18 @@ export function HUDLayer() {
       {/* Dynamic Project Inspection Details Overlay */}
       <InspectionOverlay />
 
+      {/* Speed Run Evaluation Role Selection Modal */}
+      <RoleSelectionModal />
+
+      {/* Speed Run Completion Action Hub */}
+      <ExitActionHub />
+
       {/* ARIA AI Mascot Assistant Chat Bridge */}
       <MascotChat />
     </div>
   );
 }
+
+
+
 
