@@ -4,6 +4,7 @@
  * components/canvas/ProjectNode.tsx
  *
  * An interactive hexagonal module representing a portfolio project.
+ * Uses Drei's <Html> overlay component for hardware-independent, crash-free 2D/3D labels.
  */
 
 import {
@@ -14,9 +15,10 @@ import {
   type JSX,
 } from "react";
 import { useFrame } from "@react-three/fiber";
-import { Text, Float } from "@react-three/drei";
+import { Html } from "@react-three/drei";
 import * as THREE from "three";
 import { usePortfolioStore, type ProjectCategory } from "@/lib/store";
+import { playHoverSound, playSelectSound, playTransitionSound } from "@/lib/audio";
 
 // ---------------------------------------------------------------------------
 // Theme colours (matching Tailwind config, in linear-space hex)
@@ -28,9 +30,6 @@ const C_FOCUSED_EMISSIVE = new THREE.Color("#10b981");   // emerald-highlight
 const C_BODY             = new THREE.Color("#0b1929");   // near-black navy
 const C_RING             = new THREE.Color("#1e3a4a");   // slightly lighter navy
 const C_GLOW             = new THREE.Color("#38bdf8");   // cyan for ground halo
-const C_LABEL_IDLE       = new THREE.Color("#7dd3fc");   // sky-300
-const C_LABEL_HOVER      = new THREE.Color("#e0f2fe");   // sky-50
-const C_LABEL_DIMMED     = new THREE.Color("#334155");   // slate-700
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -123,7 +122,7 @@ function GroundHalo({
 }
 
 // ---------------------------------------------------------------------------
-// Sub-component: floating label
+// Sub-component: floating label via Drei <Html> (hardware-independent)
 // ---------------------------------------------------------------------------
 
 function NodeLabel({
@@ -137,45 +136,23 @@ function NodeLabel({
   isFocused: boolean;
   isDimmed: boolean;
 }) {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const textRef = useRef<any>(null);
-  const lerpedColor = useRef(C_LABEL_IDLE.clone());
-
-  useFrame(() => {
-    const target = isDimmed
-      ? C_LABEL_DIMMED
-      : hovered || isFocused
-      ? C_LABEL_HOVER
-      : C_LABEL_IDLE;
-    lerpedColor.current.lerp(target, 0.1);
-    if (textRef.current) {
-      textRef.current.color = lerpedColor.current;
-    }
-  });
+  // Determine dynamic typography styles based on node state
+  const textColorClass = isDimmed
+    ? "text-slate-600 border-slate-800/60 bg-slate-950/40"
+    : isFocused
+    ? "text-emerald-highlight border-emerald-highlight/80 bg-emerald-950/90 shadow-[0_0_15px_rgba(16,185,129,0.5)]"
+    : hovered
+    ? "text-sky-100 border-cyan-focus bg-slate-900/95 shadow-[0_0_15px_rgba(56,189,248,0.6)] scale-105"
+    : "text-cyan-focus border-cyan-focus/40 bg-slate-dark/90 shadow-[0_0_8px_rgba(56,189,248,0.25)]";
 
   return (
-    <Float
-      speed={isDimmed ? 0.5 : 1.4}
-      rotationIntensity={0}
-      floatIntensity={isDimmed ? 0.1 : 0.3}
-      floatingRange={[-0.04, 0.04]}
-    >
-      <Text
-        ref={textRef}
-        position={[0, HEX_HEIGHT + 0.45, 0]}
-        fontSize={0.22}
-        color={C_LABEL_IDLE}
-        anchorX="center"
-        anchorY="middle"
-        renderOrder={1}
-        depthOffset={-1}
-        letterSpacing={0.04}
-        outlineWidth={0.012}
-        outlineColor="#000000"
+    <Html position={[0, 1.5, 0]} center distanceFactor={15}>
+      <div
+        className={`px-3 py-1 rounded-lg border font-mono text-xs font-bold tracking-wider uppercase transition-all duration-200 pointer-events-none select-none backdrop-blur-md whitespace-nowrap ${textColorClass}`}
       >
-        {label.toUpperCase()}
-      </Text>
-    </Float>
+        {label}
+      </div>
+    </Html>
   );
 }
 
@@ -327,8 +304,6 @@ function HexBody({
 // ---------------------------------------------------------------------------
 // Main component
 // ---------------------------------------------------------------------------
-
-import { playHoverSound, playSelectSound, playTransitionSound } from "@/lib/audio";
 
 export function ProjectNode({
   id,
