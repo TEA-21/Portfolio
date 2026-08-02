@@ -15,6 +15,7 @@
  */
 
 import { usePortfolioStore } from "@/lib/store";
+import { playHoverSound, playSelectSound, playTransitionSound } from "@/lib/audio";
 
 export function ExitActionHub() {
   const mode = usePortfolioStore((s) => s.mode);
@@ -27,16 +28,20 @@ export function ExitActionHub() {
   }
 
   const handleFreeRoam = () => {
+    playSelectSound();
+    playTransitionSound();
     setIdle();
     resetCamera();
   };
 
   const handleDownloadResume = () => {
+    playSelectSound();
     // Open resume or download placeholder
     window.open("/resume.pdf", "_blank");
   };
 
   const handleContactMe = () => {
+    playSelectSound();
     window.location.href = "mailto:taanushabrahm@gmail.com?subject=Portfolio%20Inquiry";
   };
 
@@ -73,6 +78,7 @@ export function ExitActionHub() {
           </div>
 
           <button
+            onMouseEnter={() => playHoverSound()}
             onClick={handleFreeRoam}
             className="text-xs text-slate-400 hover:text-white transition-colors px-2.5 py-1 rounded border border-slate-700 hover:border-slate-500 bg-slate-900/60"
           >
@@ -84,6 +90,7 @@ export function ExitActionHub() {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
           {/* CTA 1: Download Resume */}
           <button
+            onMouseEnter={() => playHoverSound()}
             onClick={handleDownloadResume}
             className="group relative p-4 rounded-xl border border-cyan-focus/40 bg-slate-900/80 hover:bg-slate-900/90 text-left transition-all duration-200 hover:border-cyan-focus hover:shadow-[0_0_25px_rgba(56,189,248,0.35)] hover:-translate-y-0.5 active:translate-y-0 flex flex-col justify-between"
           >
@@ -103,6 +110,7 @@ export function ExitActionHub() {
 
           {/* CTA 2: Contact Me */}
           <button
+            onMouseEnter={() => playHoverSound()}
             onClick={handleContactMe}
             className="group relative p-4 rounded-xl border border-emerald-highlight/40 bg-slate-900/80 hover:bg-slate-900/90 text-left transition-all duration-200 hover:border-emerald-highlight hover:shadow-[0_0_25px_rgba(16,185,129,0.35)] hover:-translate-y-0.5 active:translate-y-0 flex flex-col justify-between"
           >
@@ -122,6 +130,7 @@ export function ExitActionHub() {
 
           {/* CTA 3: Switch to Free-Roam */}
           <button
+            onMouseEnter={() => playHoverSound()}
             onClick={handleFreeRoam}
             className="group relative p-4 rounded-xl border border-amber-caution/40 bg-slate-900/80 hover:bg-slate-900/90 text-left transition-all duration-200 hover:border-amber-caution hover:shadow-[0_0_25px_rgba(245,158,11,0.35)] hover:-translate-y-0.5 active:translate-y-0 flex flex-col justify-between"
           >

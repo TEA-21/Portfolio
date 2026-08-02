@@ -24,6 +24,7 @@
  */
 
 import { usePortfolioStore, type EvaluationRole } from "@/lib/store";
+import { playHoverSound, playSelectSound, playTransitionSound } from "@/lib/audio";
 
 interface RoleOption {
   id: EvaluationRole;
@@ -79,6 +80,8 @@ export function RoleSelectionModal() {
   }
 
   const handleSelectRole = (role: EvaluationRole) => {
+    playSelectSound();
+    playTransitionSound();
     startSpeedRunTour(role);
   };
 
@@ -110,6 +113,7 @@ export function RoleSelectionModal() {
           </div>
 
           <button
+            onMouseEnter={() => playHoverSound()}
             onClick={() => setIdle()}
             className="text-xs text-slate-400 hover:text-cyan-focus transition-colors px-2.5 py-1 rounded border border-slate-700 hover:border-cyan-focus/60 bg-slate-900/60"
           >
@@ -127,6 +131,7 @@ export function RoleSelectionModal() {
             return (
               <button
                 key={role.id}
+                onMouseEnter={() => playHoverSound()}
                 onClick={() => handleSelectRole(role.id)}
                 className={`group relative text-left p-4 sm:p-5 rounded-xl border transition-all duration-200 bg-slate-900/80 hover:bg-slate-900 hover:scale-[1.01] active:scale-[0.99] flex flex-col justify-between ${
                   isCyan

@@ -13,6 +13,7 @@
  */
 
 import { usePortfolioStore, type ProjectCategory } from "@/lib/store";
+import { playHoverSound, playSelectSound } from "@/lib/audio";
 
 const CATEGORIES: ProjectCategory[] = [
   "AI Automation",
@@ -47,7 +48,11 @@ export function MissionControl() {
           return (
             <button
               key={category}
-              onClick={() => toggleCategory(category)}
+              onMouseEnter={() => playHoverSound()}
+              onClick={() => {
+                playSelectSound();
+                toggleCategory(category);
+              }}
               className={`flex items-center justify-between rounded-lg border px-3.5 py-2.5 font-mono text-xs font-medium transition-all duration-200 ${
                 isActive
                   ? "border-cyan-focus bg-cyan-focus/15 text-cyan-focus shadow-[0_0_12px_rgba(56,189,248,0.3)]"

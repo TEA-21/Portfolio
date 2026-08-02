@@ -329,6 +329,8 @@ function HexBody({
 // Main component
 // ---------------------------------------------------------------------------
 
+import { playHoverSound, playSelectSound, playTransitionSound } from "@/lib/audio";
+
 export function ProjectNode({
   id,
   label,
@@ -351,6 +353,7 @@ export function ProjectNode({
   const onPointerEnter = useCallback(() => {
     setHovered(true);
     document.body.style.cursor = "pointer";
+    playHoverSound();
   }, []);
 
   const onPointerLeave = useCallback(() => {
@@ -362,6 +365,8 @@ export function ProjectNode({
     (e: { stopPropagation: () => void }) => {
       e.stopPropagation();
 
+      playSelectSound();
+      playTransitionSound();
       setCamera({ x: position[0], z: position[2] });
       setZoom(FOCUS_ZOOM);
       setFocusedNodeId(id);
