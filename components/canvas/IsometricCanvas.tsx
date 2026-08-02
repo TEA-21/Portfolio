@@ -117,6 +117,7 @@ export function IsometricCanvas({ children }: IsometricCanvasProps) {
       >
         <CanvasErrorBoundary>
           <React.Suspense fallback={null}>
+
             {/* Camera rig — reads pan + zoom from Zustand store */}
             <IsometricCamera />
 

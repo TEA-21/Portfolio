@@ -169,7 +169,6 @@ function NodeLabel({
         anchorY="middle"
         renderOrder={1}
         depthOffset={-1}
-        font="/fonts/JetBrainsMono-Regular.woff2"
         letterSpacing={0.04}
         outlineWidth={0.012}
         outlineColor="#000000"

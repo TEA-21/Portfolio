@@ -1,6 +1,6 @@
 export default function Home() {
   return (
-    <main className="flex min-h-screen flex-col items-center justify-end p-8 bg-transparent text-white pointer-events-none">
+    <main className="relative w-screen h-screen overflow-hidden flex flex-col items-center justify-end p-8 bg-transparent text-white pointer-events-none">
       <div className="w-full max-w-4xl rounded-xl border border-cyan-focus/30 bg-slate-dark/80 p-6 shadow-2xl shadow-cyan-focus/10 backdrop-blur-sm pointer-events-auto mb-4">
         <header className="border-b border-cyan-focus/20 pb-3">
           <div className="flex items-center justify-between">

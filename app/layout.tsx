@@ -31,9 +31,9 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${inter.variable} ${jetbrainsMono.variable} h-full antialiased`}
+      className={`${inter.variable} ${jetbrainsMono.variable} h-screen w-screen overflow-hidden antialiased`}
     >
-      <body className="min-h-full flex flex-col font-sans bg-slate-dark text-white">
+      <body className="relative h-screen w-screen overflow-hidden flex flex-col font-sans bg-slate-dark text-white">
         <PortfolioStoreProvider>
           {/* Full-screen 3D canvas — sits at z-0 behind all page content */}
           <CanvasLayer>
