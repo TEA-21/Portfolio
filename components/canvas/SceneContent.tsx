@@ -10,6 +10,7 @@
 
 import { ProjectNode } from "./ProjectNode";
 import { SpeedRunController } from "./SpeedRunController";
+import { NodeConnectors } from "./NodeConnectors";
 import type { ProjectCategory } from "@/lib/store";
 
 interface ProjectConfig {
@@ -32,6 +33,9 @@ export function SceneContent() {
     <>
       {/* Speed Run automated tour controller — no visual output */}
       <SpeedRunController />
+
+      {/* Animated data-telemetry connector lines between nodes */}
+      <NodeConnectors />
 
       {PROJECTS.map((proj) => (
         <ProjectNode
