@@ -18,10 +18,18 @@ import { InspectionOverlay } from "./InspectionOverlay";
 import { MascotChat } from "./MascotChat";
 import { RoleSelectionModal } from "./RoleSelectionModal";
 import { ExitActionHub } from "./ExitActionHub";
+import { CyberCursor } from "./CyberCursor";
+import { CRTOverlay } from "./CRTOverlay";
 
 export function HUDLayer() {
   return (
     <div className="fixed inset-0 z-20 pointer-events-none overflow-hidden">
+      {/* Animated CRT Scanlines & Vignetting Overlay */}
+      <CRTOverlay />
+
+      {/* Custom Cyberpunk Crosshair Cursor */}
+      <CyberCursor />
+
       {/* Top-Right Mission Control Filter Matrix HUD */}
       <MissionControl />
 

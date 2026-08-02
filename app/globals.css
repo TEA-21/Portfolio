@@ -4,6 +4,48 @@
 
 @layer base {
   body {
-    @apply bg-slate-dark text-white font-sans;
+    @apply bg-slate-dark text-white font-sans overflow-x-hidden;
   }
 }
+
+/* Hide native cursor when custom cyber cursor component is mounted */
+.custom-cursor-active,
+.custom-cursor-active * {
+  cursor: none !important;
+}
+
+/* CRT Scanline Overlay */
+.crt-scanlines {
+  background: linear-gradient(
+      rgba(18, 16, 16, 0) 50%,
+      rgba(0, 0, 0, 0.25) 50%
+    ),
+    linear-gradient(
+      90deg,
+      rgba(255, 0, 0, 0.02),
+      rgba(0, 255, 0, 0.01),
+      rgba(0, 0, 255, 0.02)
+    );
+  background-size: 100% 3px, 6px 100%;
+  animation: scanlineScroll 12s linear infinite;
+}
+
+@keyframes scanlineScroll {
+  0% {
+    background-position: 0 0;
+  }
+  100% {
+    background-position: 0 100%;
+  }
+}
+
+/* Radial Vignetting Effect */
+.vignette-overlay {
+  background: radial-gradient(
+    circle at center,
+    transparent 50%,
+    rgba(11, 15, 23, 0.6) 80%,
+    rgba(5, 8, 15, 0.92) 100%
+  );
+}
+
