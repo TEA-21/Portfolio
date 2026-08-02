@@ -23,7 +23,7 @@ import { CRTOverlay } from "./CRTOverlay";
 
 export function HUDLayer() {
   return (
-    <div className="fixed inset-0 z-20 pointer-events-none overflow-hidden">
+    <div className="fixed inset-0 w-full h-full z-10 pointer-events-none overflow-hidden">
       {/* Animated CRT Scanlines & Vignetting Overlay */}
       <CRTOverlay />
 

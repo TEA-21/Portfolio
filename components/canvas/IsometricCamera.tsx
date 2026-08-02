@@ -82,6 +82,8 @@ export function IsometricCamera() {
     // Clamp so scene never inverts or disappears
     const targetZoom = Math.max(0.1, Math.min(10, zoom));
     camera.zoom += (targetZoom - camera.zoom) * 0.08;
+    camera.near = -100;
+    camera.far = 1000;
     camera.updateProjectionMatrix();
   });
 

@@ -38,7 +38,7 @@
  *   </IsometricCanvas>
  */
 
-import { useRef, type ReactNode } from "react";
+import React, { useRef, type ReactNode } from "react";
 import { Canvas } from "@react-three/fiber";
 import * as THREE from "three";
 import { IsometricCamera } from "./IsometricCamera";
@@ -72,34 +72,20 @@ export function IsometricCanvas({ children }: IsometricCanvasProps) {
     <div
       ref={containerRef}
       aria-hidden="true"
-      style={{
-        position: "fixed",
-        inset: 0,
-        zIndex: 0,
-        pointerEvents: "none", // Let mouse events fall through to page UI
-      }}
+      className="fixed inset-0 w-full h-full min-h-screen z-0 overflow-hidden pointer-events-none"
     >
       <Canvas
         /**
          * Orthographic camera — position is just a starting hint;
          * IsometricCamera.useFrame overrides it every tick via lerp.
          *
-         * We set a manual initial position along the isometric ray so the
-         * very first rendered frame isn't at the origin (avoids one-frame pop).
-         *
-         * left/right/top/bottom are computed from FRUSTUM_SIZE and the
-         * current aspect ratio inside onCreated, and on resize R3F updates
-         * them automatically when camera.type === "OrthographicCamera" and
-         * we provide the `orthographic` shorthand prop.
+         * Set near={-100} and far={1000} to guarantee grid (y=0) and floating nodes (y=0.5)
+         * are never clipped by projection bounds.
          */
         orthographic
         camera={{
-          position: [
-            ISO_INIT.x,
-            ISO_INIT.y,
-            ISO_INIT.z,
-          ],
-          near: 0.1,
+          position: [10, 10, 10],
+          near: -100,
           far: 1000,
           zoom: 1,
         }}
@@ -109,7 +95,7 @@ export function IsometricCanvas({ children }: IsometricCanvasProps) {
         frameloop="always"
         // Enable shadow map
         shadows={{ type: THREE.PCFSoftShadowMap }}
-        // Keep linear colour space for future post-processing
+        // Keep linear colour space for post-processing
         linear
         // Transparent background — page background (slate-dark) shows through
         gl={{ alpha: true, antialias: true }}
@@ -122,21 +108,26 @@ export function IsometricCanvas({ children }: IsometricCanvasProps) {
             camera.right = FRUSTUM_SIZE * aspect;
             camera.top = FRUSTUM_SIZE;
             camera.bottom = -FRUSTUM_SIZE;
+            camera.near = -100;
+            camera.far = 1000;
             camera.updateProjectionMatrix();
           }
         }}
       >
-        {/* Camera rig — reads pan + zoom from Zustand store */}
-        <IsometricCamera />
+        {/* Suspense wrapper ensures Drei <Text> font loading doesn't block or blank the canvas */}
+        <React.Suspense fallback={null}>
+          {/* Camera rig — reads pan + zoom from Zustand store */}
+          <IsometricCamera />
 
-        {/* Lighting rig */}
-        <SceneLighting />
+          {/* Lighting rig */}
+          <SceneLighting />
 
-        {/* Cyberpunk terminal grid — foundational XZ floor */}
-        <CyberGrid />
+          {/* Cyberpunk terminal grid — foundational XZ floor */}
+          <CyberGrid />
 
-        {/* Optional scene children (nodes, particles, etc.) */}
-        {children}
+          {/* Scene children (nodes, connectors, controllers) */}
+          {children}
+        </React.Suspense>
       </Canvas>
     </div>
   );

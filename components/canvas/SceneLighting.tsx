@@ -29,14 +29,14 @@ export function SceneLighting() {
     <>
       {/* ── 1. Ambient fill ─────────────────────────────────────────── */}
       <ambientLight
-        color="#1a2035" // deep cool blue-grey
-        intensity={0.6}
+        color="#38bdf8"
+        intensity={1.5}
       />
 
       {/* ── 2. Key directional (cyan / neon) ────────────────────────── */}
       <directionalLight
         color="#38bdf8" // cyan-focus from Tailwind theme
-        intensity={1.4}
+        intensity={1.8}
         position={[8, 12, 6]}
         castShadow
         shadow-mapSize-width={1024}
