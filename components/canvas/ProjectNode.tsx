@@ -146,7 +146,7 @@ function NodeLabel({
     : "text-cyan-focus border-cyan-focus/40 bg-slate-dark/90 shadow-[0_0_8px_rgba(56,189,248,0.25)]";
 
   return (
-    <Html position={[0, 1.5, 0]} center distanceFactor={15}>
+    <Html position={[0, 1.2, 0]} center>
       <div
         className={`px-3 py-1 rounded-lg border font-mono text-xs font-bold tracking-wider uppercase transition-all duration-200 pointer-events-none select-none backdrop-blur-md whitespace-nowrap ${textColorClass}`}
       >
