@@ -62,9 +62,10 @@ export function IsometricCamera() {
   useFrame(() => {
     if (!(camera instanceof THREE.OrthographicCamera)) return;
 
-    // Pan target derived from store x/y
-    const panX = storeCamera.x;
-    const panY = storeCamera.y;
+    // Pan target derived from store x/y with fallback protection against NaN/undefined
+    const panX = Number.isFinite(storeCamera?.x) ? storeCamera.x : 0;
+    const panY = Number.isFinite(storeCamera?.y) ? storeCamera.y : 0;
+    const rawZoom = Number.isFinite(zoom) ? zoom : 1;
 
     // Desired look-at point (pan in XZ world plane)
     targetLookAt.current.set(panX, 0, panY);
@@ -80,7 +81,7 @@ export function IsometricCamera() {
 
     // Zoom — orthographic cameras use the `.zoom` property directly
     // Clamp so scene never inverts or disappears
-    const targetZoom = Math.max(0.1, Math.min(10, zoom));
+    const targetZoom = Math.max(0.1, Math.min(10, rawZoom));
     camera.zoom += (targetZoom - camera.zoom) * 0.08;
     camera.near = -100;
     camera.far = 1000;

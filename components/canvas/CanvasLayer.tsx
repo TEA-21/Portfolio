@@ -3,22 +3,11 @@
 /**
  * components/canvas/CanvasLayer.tsx
  *
- * Thin 'use client' wrapper that lazy-loads IsometricCanvas.
- *
- * WHY A SEPARATE WRAPPER?
- * -----------------------
- * app/layout.tsx is a Server Component. Three.js (and R3F) rely on browser
- * globals (WebGL, ResizeObserver, etc.) that don't exist on the server.
- *
- * Using next/dynamic with `{ ssr: false }` ensures the canvas is only ever
- * instantiated client-side, preventing "window is not defined" SSR errors
- * and hydration mismatches — even if Next.js tries to pre-render the layout.
- *
- * This wrapper is itself `'use client'` so it can receive the dynamic import
- * result safely. It is imported as a normal import in layout.tsx; Next.js
- * will automatically treat it as a client boundary.
+ * Client-only wrapper that lazy-loads IsometricCanvas with ssr: false
+ * and a mounted guard to ensure WebGL contexts only instantiate client-side.
  */
 
+import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import type { IsometricCanvasProps } from "./IsometricCanvas";
 
@@ -28,5 +17,20 @@ const IsometricCanvas = dynamic(
 );
 
 export function CanvasLayer(props: IsometricCanvasProps) {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    return (
+      <div
+        className="fixed inset-0 w-full h-full min-h-screen z-0 overflow-hidden pointer-events-none bg-slate-dark"
+        aria-hidden="true"
+      />
+    );
+  }
+
   return <IsometricCanvas {...props} />;
 }

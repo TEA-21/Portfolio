@@ -367,7 +367,7 @@ export function ProjectNode({
 
       playSelectSound();
       playTransitionSound();
-      setCamera({ x: position[0], z: position[2] });
+      setCamera({ x: position[0], y: position[2] });
       setZoom(FOCUS_ZOOM);
       setFocusedNodeId(id);
       setInspection();
