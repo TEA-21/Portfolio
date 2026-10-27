@@ -3,51 +3,30 @@
 /**
  * components/ui/HUDLayer.tsx
  *
- * Absolute/Fixed full-screen container for 2D HUD UI overlays (MissionControl, InspectionOverlay).
- *
- * POINTER EVENTS ARCHITECTURE
- * ───────────────────────────
- * - Container wrapper has `pointer-events-none` so mouse/pointer events pass through
- *   transparent areas directly to the 3D CanvasLayer below.
- * - Individual 2D UI elements (MissionControl panel, InspectionOverlay panel/buttons)
- *   have `pointer-events-auto` so clicks and hovers on HUD elements function normally.
+ * Fixed full-screen container for ambient UI overlays (CRT overlay & custom cursor).
+ * The fixed bottom-corner mascot chat button has been removed in favor of the floating
+ * NPC MascotCompanion embedded directly in the page flow.
  */
 
-import { MissionControl } from "./MissionControl";
-import { InspectionOverlay } from "./InspectionOverlay";
-import { MascotChat } from "./MascotChat";
-import { RoleSelectionModal } from "./RoleSelectionModal";
-import { ExitActionHub } from "./ExitActionHub";
 import { CyberCursor } from "./CyberCursor";
 import { CRTOverlay } from "./CRTOverlay";
+import { FlyingMascotCompanion } from "./FlyingMascotCompanion";
+import { MascotChat } from "./MascotChat";
 
 export function HUDLayer() {
   return (
-    <div className="fixed inset-0 w-full h-full z-10 pointer-events-none overflow-hidden">
-      {/* Animated CRT Scanlines & Vignetting Overlay */}
+    <div className="fixed inset-0 w-full h-full z-[99998] pointer-events-none overflow-hidden">
+      {/* Animated CRT Scanlines & Vignetting */}
       <CRTOverlay />
 
-      {/* Custom Cyberpunk Crosshair Cursor */}
-      <CyberCursor />
+      {/* Floating 16-Bit Pixel-Art Astronaut Companion (Self-contained pointer-events-auto hitboxes) */}
+      <FlyingMascotCompanion />
 
-      {/* Top-Right Mission Control Filter Matrix HUD */}
-      <MissionControl />
-
-      {/* Dynamic Project Inspection Details Overlay */}
-      <InspectionOverlay />
-
-      {/* Speed Run Evaluation Role Selection Modal */}
-      <RoleSelectionModal />
-
-      {/* Speed Run Completion Action Hub */}
-      <ExitActionHub />
-
-      {/* ARIA AI Mascot Assistant Chat Bridge */}
+      {/* ARIA AI Chat Terminal (Triggered via Mascot HUD or hotkey) */}
       <MascotChat />
+
+      {/* Custom Starlight Magnetic Cursor & Trail (Topmost) */}
+      <CyberCursor />
     </div>
   );
 }
-
-
-
-

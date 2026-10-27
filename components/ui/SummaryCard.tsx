@@ -26,25 +26,55 @@ export interface SummaryCardProps {
 
 /** 3-bullet core contributions keyed by focusedNodeId */
 const CORE_CONTRIBUTIONS: Record<string, [string, string, string]> = {
-  parleylab: [
-    "Python LLM fallback routing",
-    "Zustand state management",
-    "Interactive negotiation panels",
+  shadowos: [
+    "Sub-second microVM hypervisor isolation (Firecracker/libkrun)",
+    "Sub-100ms state snapshots & 1.34ms OverlayFS rollback",
+    "Headless visual Chrome CDP driver & Antigravity MCP server",
+  ],
+  "local-llm": [
+    "Asynchronous NVMe router prefetching with O_DIRECT",
+    "Speculative lookahead batching reaching >8.4 tok/s",
+    "SpikeBrain exponential decay hot-expert RAM pinning",
+  ],
+  projectparrot: [
+    "Two-stage training on TinyStories with target-masked SFT",
+    "Custom 1,024-token SentencePiece BPE tokenizer",
+    "Bare-metal zero-dependency INT8 C runtime for ESP32-S3",
   ],
   zerotrust: [
-    "Cross-platform Flutter/Dart applications",
-    "Prisma ORM integration",
-    "Transaction telemetry",
+    "Cross-platform Flutter/Dart architecture",
+    "End-to-end encrypted ledger data storage",
+    "Sub-second transaction anomaly telemetry",
   ],
-  mpmc: [
-    "ESP32 hardware integration",
-    "YOLOv8 predictive analytics",
-    "Python backend",
+  "aela-security": [
+    "Autonomous zero-standing IAM privilege scale-down",
+    "Real-time PyTorch LSTM 16-D sequence anomaly detection",
+    "Scoped 5-minute TTL JIT credential leasing via AWS STS",
+  ],
+  dryaf: [
+    "100% client-side HTML5 canvas CV water refraction scanner",
+    "Google OAuth 2.0 mandatory verification & session tokens",
+    "Web Audio API needle flapper physics Wheel of Sacrifice",
+  ],
+  "mpmc-project": [
+    "YOLOv8 vehicle detection & Tesseract OCR normalization",
+    "Li-Fi 3Hz flashlight optical unlock via real-time FFT",
+    "Automated GDPR Gaussian blur face/plate anonymization",
+  ],
+  teachercopilot: [
+    "Automated curriculum and lesson plan generation",
+    "Dynamic grading rubric synthesizer",
+    "Responsive Next.js & Tailwind CSS dashboard",
+  ],
+  parleylab: [
+    "Stable-Baselines3 PPO reinforcement learning loops",
+    "Multi-agent adversarial negotiation trees",
+    "Real-time streamed debate scoring feedback",
   ],
   civicguard: [
-    "WebAuthn biometrics",
-    "Solidity smart contracts",
-    "DigiLocker API integration",
+    "WebAuthn passkey biometric authentication",
+    "Local Zero-Knowledge Proof (ZKP) generation",
+    "WASM compilation for client-side privacy",
   ],
 };
 

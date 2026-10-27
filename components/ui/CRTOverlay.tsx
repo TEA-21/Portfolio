@@ -4,25 +4,22 @@
  * components/ui/CRTOverlay.tsx
  *
  * Fixed pointer-events-none viewport overlay providing:
- *  1. Animated CRT scanlines for command terminal aesthetics
- *  2. Subtle radial vignetting darkening screen edges
- *  3. Subtle cyberpunk corner HUD telemetry markings
+ *  1. Deep celestial radial vignetting
+ *  2. Subtle starlight dust depth
+ *  3. Ethereal observatory corner calipers
  */
 
 export function CRTOverlay() {
   return (
     <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
-      {/* CRT Scanline Scrolling Pass */}
-      <div className="crt-scanlines absolute inset-0 opacity-40 mix-blend-overlay" />
-
-      {/* Radial Vignetting Pass */}
+      {/* Deep Celestial Radial Vignette */}
       <div className="vignette-overlay absolute inset-0" />
 
-      {/* Screen Edge Cyberpunk Corner Framing */}
-      <div className="absolute top-2 left-2 border-t-2 border-l-2 border-cyan-focus/30 w-4 h-4" />
-      <div className="absolute top-2 right-2 border-t-2 border-r-2 border-cyan-focus/30 w-4 h-4" />
-      <div className="absolute bottom-2 left-2 border-b-2 border-l-2 border-cyan-focus/30 w-4 h-4" />
-      <div className="absolute bottom-2 right-2 border-b-2 border-r-2 border-cyan-focus/30 w-4 h-4" />
+      {/* Screen Edge Observatory Calipers */}
+      <div className="absolute top-3 left-3 border-t border-l border-nebula-violet/30 w-5 h-5 rounded-tl" />
+      <div className="absolute top-3 right-3 border-t border-r border-nebula-violet/30 w-5 h-5 rounded-tr" />
+      <div className="absolute bottom-3 left-3 border-b border-l border-starlight-gold/25 w-5 h-5 rounded-bl" />
+      <div className="absolute bottom-3 right-3 border-b border-r border-starlight-gold/25 w-5 h-5 rounded-br" />
     </div>
   );
 }

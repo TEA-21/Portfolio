@@ -36,14 +36,27 @@ import { usePortfolioStore } from "@/lib/store";
 // ---------------------------------------------------------------------------
 
 const SPEED_RUN_HARDCODED_MESSAGES: Record<string, string> = {
-  parleylab:
-    "Currently viewing ParleyLab: An AI fallback routing system featuring interactive negotiation panels and Zustand state management.",
+  shadowos:
+    "Arriving at ShadowOS: Sub-second hardware-isolated ephemeral MicroVM sandbox for autonomous AI agents in Rust.",
+  "local-llm":
+    "Focusing on Colibri MoE Engine: Ultra-low footprint C++ MoE inference engine streaming Qwen 27B within a strict 5GB RAM ceiling.",
+  projectparrot:
+    "Inspecting Project Parrot: Custom ~1.97M parameter decoder-only Transformer micro-SLM running bare-metal C on ESP32 microcontrollers.",
   zerotrust:
-    "Focusing on ZeroTrust Finance Tracker: A cross-platform financial application built with Flutter, backed by Prisma and transaction telemetry.",
+    "Focusing on ZeroTrust Finance Tracker: Zero-trust encrypted ledger and cryptographic audit trails in Flutter & microservices.",
+  "aela-security":
+    "Arriving at AELA Cloud Security: Autonomous zero-standing privilege & JIT IAM leasing engine with PyTorch LSTM anomaly detection.",
+  dryaf:
+    "Currently viewing DryAF: Dorm hydration survival guide with on-device HTML5 canvas CV water refraction scanner & live app.",
+  // Web Graph fallbacks
+  parleylab:
+    "Viewing ParleyLab: An AI negotiation simulator powered by PPO reinforcement learning and multi-agent LLM coaching.",
+  "mpmc-project":
+    "Inspecting Edge-AI Smart Parking: YOLOv8 vehicle detection, Tesseract LPR, Li-Fi 3Hz flashlight unlock, and GDPR blur.",
   mpmc:
-    "Inspecting the MPMC Project: A hardware-integrated embedded ML system utilizing ESP32, Python, and YOLOv8 predictive analytics.",
+    "Inspecting Edge-AI Smart Parking: YOLOv8 vehicle detection, Tesseract LPR, Li-Fi 3Hz flashlight unlock, and GDPR blur.",
   civicguard:
-    "Arriving at Civic Guard: A decentralized identity security platform utilizing WebAuthn biometrics and Solidity smart contracts.",
+    "Arriving at CivicGuard: Decentralized identity platform with WebAuthn biometric keys, ZKP, and WebAssembly.",
 };
 
 // ---------------------------------------------------------------------------
@@ -51,10 +64,17 @@ const SPEED_RUN_HARDCODED_MESSAGES: Record<string, string> = {
 // NOTE: Uses {x: worldX, y: worldZ} convention matching IsometricCamera.tsx
 // ---------------------------------------------------------------------------
 const NODE_POSITIONS: Record<string, { x: number; y: number; z: number }> = {
-  parleylab:  { x: -3, y:  3, z: 0 },
-  zerotrust:  { x:  3, y:  3, z: 0 },
-  mpmc:       { x:  3, y: -3, z: 0 },
-  civicguard: { x: -3, y: -3, z: 0 },
+  shadowos:        { x: -3.5, y:  2.0, z: 0 },
+  "local-llm":     { x:  0.0, y:  3.5, z: 0 },
+  projectparrot:   { x:  3.5, y:  2.0, z: 0 },
+  zerotrust:       { x:  3.5, y: -2.0, z: 0 },
+  "aela-security": { x:  0.0, y: -3.5, z: 0 },
+  dryaf:           { x: -3.5, y: -2.0, z: 0 },
+  // Web Graph fallbacks
+  parleylab:       { x: -3.0, y:  3.0, z: 0 },
+  "mpmc-project":  { x:  3.0, y: -3.0, z: 0 },
+  mpmc:            { x:  3.0, y: -3.0, z: 0 },
+  civicguard:      { x: -3.0, y: -3.0, z: 0 },
 };
 
 export function MascotChat() {
@@ -110,7 +130,44 @@ export function MascotChat() {
         }
       }
     },
+    onError(error) {
+      console.warn("[MascotChat] Stream dropped mid-flight or request failed:", error);
+      const fallbackText =
+        "⚡ [LOCAL RELAY FALLBACK]\n" +
+        "Telemetry gateway disconnected. Local terminal is operational:\n\n" +
+        "• Ask about ShadowOS, Colibri MoE, or Project Parrot\n" +
+        "• Or click [INITIATE TOUR] to auto-navigate the 3D Solar System!";
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `fallback-err-${Date.now()}`,
+          role: "assistant",
+          content: fallbackText,
+          parts: [{ type: "text", text: fallbackText }],
+        } as any,
+      ]);
+    },
   });
+
+  // Listen for open requests from FlyingMascotCompanion
+  useEffect(() => {
+    const handleOpen = () => setIsOpen(true);
+    const handleToggle = () => setIsOpen((prev) => !prev);
+    window.addEventListener("open-mascot-chat", handleOpen);
+    window.addEventListener("toggle-mascot-chat", handleToggle);
+    return () => {
+      window.removeEventListener("open-mascot-chat", handleOpen);
+      window.removeEventListener("toggle-mascot-chat", handleToggle);
+    };
+  }, []);
+
+  // Broadcast transmitting state to FlyingMascotCompanion
+  useEffect(() => {
+    const isTransmitting = status === "submitted" || status === "streaming";
+    window.dispatchEvent(
+      new CustomEvent("mascot-transmitting", { detail: isTransmitting })
+    );
+  }, [status]);
 
   const onSubmitForm = (e: React.FormEvent) => {
     e.preventDefault();
@@ -239,7 +296,7 @@ export function MascotChat() {
           <div className="flex-1 overflow-y-auto space-y-3 pr-1 text-xs mb-3 text-slate-200 scrollbar-thin scrollbar-thumb-cyan-focus/30">
             {messages.length === 0 ? (
               <div className="text-slate-400 italic text-[11px] bg-slate-900/50 p-2.5 rounded border border-slate-800">
-                &gt; ARIA System online. Ask me about ParleyLab, ZeroTrust, MPMC System, or CivicGuard to focus 3D nodes!
+                &gt; ARIA System online. Ask me about ShadowOS, Colibri MoE, Project Parrot, DryAF, or any portfolio project to inspect nodes!
               </div>
             ) : (
               messages.map((m) => {

@@ -1,9 +1,8 @@
 import type { Metadata } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import { PortfolioStoreProvider } from "@/lib/store";
-import { CanvasLayer } from "@/components/canvas/CanvasLayer";
-import { SceneContent } from "@/components/canvas/SceneContent";
 import { HUDLayer } from "@/components/ui/HUDLayer";
+import { CosmicBackground } from "@/components/canvas/CosmicBackground";
 import "./globals.css";
 
 const inter = Inter({
@@ -19,8 +18,9 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Cyberpunk Portfolio",
-  description: "Next.js 14 Cyberpunk Application",
+  title: "Taanush Abraham — Portfolio",
+  description:
+    "AI/LLM Engineer & B.Tech CS student building scalable machine learning systems, deep learning models, and agentic AI architectures.",
 };
 
 export default function RootLayout({
@@ -31,22 +31,18 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${inter.variable} ${jetbrainsMono.variable} h-screen w-screen overflow-hidden antialiased`}
+      className={`${inter.variable} ${jetbrainsMono.variable} antialiased`}
     >
-      <body className="relative h-screen w-screen overflow-hidden flex flex-col font-sans bg-slate-dark text-white">
+      <body className="relative min-h-screen font-sans bg-void-black text-white overflow-x-hidden">
         <PortfolioStoreProvider>
-          {/* Full-screen 3D canvas — sits at z-0 behind all page content */}
-          <CanvasLayer>
-            <SceneContent />
-          </CanvasLayer>
+          {/* Dynamic WebGL2 Interactive Nebula & Deep Space Canvas */}
+          <CosmicBackground />
 
-          {/* 2D HUD UI layer — sits over CanvasLayer with pointer-events pass-through */}
+          {/* Primary scrollable page content */}
+          {children}
+
+          {/* Fixed ambient HUD — custom starlight magnetic cursor & observatory calipers */}
           <HUDLayer />
-
-          {/* Page content — establishes stacking context above z-0 */}
-          <div className="relative z-10 flex flex-col flex-1 pointer-events-none">
-            {children}
-          </div>
         </PortfolioStoreProvider>
       </body>
     </html>

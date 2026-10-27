@@ -2,43 +2,44 @@
  * lib/audio.ts
  *
  * Browser-native Web Audio API micro-interaction sound synthesizer.
+ * Tuned to deep celestial resonance and starlight sine chimes.
  *
  * DESIGN PRINCIPLES
  * ─────────────────
  * • Zero external asset dependencies — all sounds are synthesized programmatically
  *   from OscillatorNodes, GainNodes, and BiquadFilterNodes.
  * • Lazy AudioContext initialization on first call (respects browser autoplay policy).
- * • Each function is fire-and-forget: it creates a short-lived node graph, schedules
- *   the full envelope, then lets the nodes auto-disconnect via onended.
- * • All sounds are subtle: gain values are kept low (≤0.15) to avoid startling users.
+ * • Pure ethereal sine waves for cosmic tranquility without harsh metallic artifacts.
  * • Guard against SSR: all calls no-op on the server.
- *
- * SOUNDS
- * ──────
- * playHoverSound()      — Soft high-frequency click for node/button hover.
- * playSelectSound()     — Crisp two-tone chime for node click / Speed Run trigger.
- * playTransitionSound() — Low pitch-sweep for camera pans and mode shifts.
  */
 
-// ---------------------------------------------------------------------------
-// AudioContext singleton
-// ---------------------------------------------------------------------------
-
 let _ctx: AudioContext | null = null;
+let isAudioMuted = false;
 
-/** Lazily create (or resume) the shared AudioContext on first call. */
+/** Toggle global audio mute state */
+export function toggleAudioMute(): boolean {
+  isAudioMuted = !isAudioMuted;
+  return isAudioMuted;
+}
+
+/** Get global audio mute state */
+export function getAudioMuted(): boolean {
+  return isAudioMuted;
+}
+
+/** Lazily create (or resume) the shared AudioContext on user interaction. */
 function getCtx(): AudioContext | null {
-  if (typeof window === "undefined") return null;
+  if (typeof window === "undefined" || isAudioMuted) return null;
 
   if (!_ctx) {
     try {
-      _ctx = new AudioContext();
+      const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      _ctx = new AudioCtx();
     } catch {
       return null;
     }
   }
 
-  // Resume if suspended by browser autoplay policy (requires prior user gesture)
   if (_ctx.state === "suspended") {
     void _ctx.resume();
   }
@@ -46,23 +47,6 @@ function getCtx(): AudioContext | null {
   return _ctx;
 }
 
-// ---------------------------------------------------------------------------
-// Internal helpers
-// ---------------------------------------------------------------------------
-
-/**
- * Creates an OscillatorNode + GainNode chain with an attack/decay/release
- * amplitude envelope. Cleans up automatically when the envelope finishes.
- *
- * @param frequency  Starting oscillator frequency in Hz
- * @param type       OscillatorType ('sine' | 'square' | 'sawtooth' | 'triangle')
- * @param peakGain   Peak amplitude (0–1)
- * @param attack     Attack duration in seconds
- * @param decay      Decay duration in seconds
- * @param sustain    Sustain level (fraction of peakGain)
- * @param release    Release duration in seconds
- * @returns          The OscillatorNode (for further scheduling) or null on error
- */
 function scheduleEnvelope(
   ctx: AudioContext,
   destination: AudioNode,
@@ -87,7 +71,6 @@ function scheduleEnvelope(
     const sustainLevel = peakGain * sustain;
     const t3 = t2 + release;
 
-    // ADSR envelope
     gain.gain.setValueAtTime(0, t0);
     gain.gain.linearRampToValueAtTime(peakGain, t1);
     gain.gain.linearRampToValueAtTime(sustainLevel, t2);
@@ -100,7 +83,6 @@ function scheduleEnvelope(
     osc.start(t0);
     osc.stop(t3 + 0.01);
 
-    // Auto-cleanup
     osc.onended = () => {
       osc.disconnect();
       gain.disconnect();
@@ -112,44 +94,33 @@ function scheduleEnvelope(
   }
 }
 
-// ---------------------------------------------------------------------------
-// Public API
-// ---------------------------------------------------------------------------
-
 /**
  * playHoverSound()
- *
- * A soft, high-frequency transient click — used when the cursor enters a
- * project node or HUD button. Subtle enough to not break focus but present
- * enough to confirm interactivity.
- *
- * Design: short sine burst at 1200 Hz with a near-instant attack/release.
+ * Ethereal celestial starlight chime — soft high-frequency bell tick.
  */
 export function playHoverSound(): void {
   const ctx = getCtx();
   if (!ctx) return;
 
-  // Soft high-freq sine click
   scheduleEnvelope(
     ctx,
     ctx.destination,
-    1200,       // frequency: high for a crisp click feeling
+    1320,       // Frequency: E6 celestial chime
     "sine",
-    0.06,       // peakGain: very quiet
-    0.002,      // attack: near-instant
-    0.03,       // decay: short
-    0.0,        // sustain: none
-    0.04        // release: quick fade
+    0.04,       // Soft amplitude
+    0.003,
+    0.04,
+    0.0,
+    0.05
   );
 
-  // Optional sub-tick: a very faint triangle at half frequency for body
   scheduleEnvelope(
     ctx,
     ctx.destination,
-    600,
-    "triangle",
-    0.02,
-    0.001,
+    2640,       // Starlight harmonic overtone
+    "sine",
+    0.015,
+    0.002,
     0.02,
     0.0,
     0.03
@@ -158,65 +129,55 @@ export function playHoverSound(): void {
 
 /**
  * playSelectSound()
- *
- * A crisp two-tone chime — used when clicking a project node or triggering
- * the Speed Run mode. The two tones are spaced 150 ms apart for a classic
- * "confirmation" feel.
- *
- * Design: fundamental at 880 Hz (A5) + second tone at 1320 Hz (E6, perfect fifth).
+ * Resonant cosmic chord — 528 Hz into 1056 Hz harmonic affirmation.
  */
 export function playSelectSound(): void {
   const ctx = getCtx();
   if (!ctx) return;
 
-  // First tone: A5
   const osc1 = scheduleEnvelope(
     ctx,
     ctx.destination,
-    880,
+    528,        // Solfeggio 528 Hz resonant tone
     "sine",
-    0.12,
-    0.005,
-    0.06,
-    0.2,
-    0.15
+    0.09,
+    0.006,
+    0.08,
+    0.15,
+    0.2
   );
 
-  // Second tone: E6 (perfect fifth above A5), delayed 140 ms
   if (osc1 && ctx) {
     const osc2 = ctx.createOscillator();
     const gain2 = ctx.createGain();
     osc2.type = "sine";
-    osc2.frequency.setValueAtTime(1320, ctx.currentTime);
+    osc2.frequency.setValueAtTime(1056, ctx.currentTime);
 
-    const t0 = ctx.currentTime + 0.14; // delayed start
-    const t1 = t0 + 0.005;
-    const t2 = t1 + 0.08;
-    const t3 = t2 + 0.2;
+    const t0 = ctx.currentTime + 0.09;
+    const t1 = t0 + 0.006;
+    const t2 = t1 + 0.09;
+    const t3 = t2 + 0.25;
 
     gain2.gain.setValueAtTime(0, ctx.currentTime);
     gain2.gain.setValueAtTime(0, t0);
-    gain2.gain.linearRampToValueAtTime(0.1, t1);
-    gain2.gain.linearRampToValueAtTime(0.02, t2);
+    gain2.gain.linearRampToValueAtTime(0.08, t1);
+    gain2.gain.linearRampToValueAtTime(0.015, t2);
     gain2.gain.exponentialRampToValueAtTime(0.0001, t3);
 
     osc2.connect(gain2);
     gain2.connect(ctx.destination);
     osc2.start(t0);
     osc2.stop(t3 + 0.01);
-    osc2.onended = () => { osc2.disconnect(); gain2.disconnect(); };
+    osc2.onended = () => {
+      osc2.disconnect();
+      gain2.disconnect();
+    };
   }
 }
 
 /**
  * playTransitionSound()
- *
- * A low downward pitch-sweep — used for camera pans between nodes and mode
- * shifts (e.g., idle → inspection, inspection → exitActionHub). Creates a
- * sense of spatial movement and state change.
- *
- * Design: sawtooth at 220 Hz sweeping down to 80 Hz over 400 ms,
- * filtered with a lowpass BiquadFilter to remove harshness.
+ * Deep interstellar sine resonance sweep for planetary camera transitions.
  */
 export function playTransitionSound(): void {
   const ctx = getCtx();
@@ -227,30 +188,26 @@ export function playTransitionSound(): void {
     const gain = ctx.createGain();
     const filter = ctx.createBiquadFilter();
 
-    osc.type = "sawtooth";
+    osc.type = "sine";
 
-    // Lowpass filter to soften the sawtooth harshness
     filter.type = "lowpass";
-    filter.frequency.setValueAtTime(800, ctx.currentTime);
-    filter.Q.setValueAtTime(1.5, ctx.currentTime);
+    filter.frequency.setValueAtTime(600, ctx.currentTime);
+    filter.Q.setValueAtTime(1.2, ctx.currentTime);
 
     const t0 = ctx.currentTime;
-    const t1 = t0 + 0.01;  // attack
-    const t2 = t1 + 0.35;  // sustain end
-    const t3 = t2 + 0.2;   // release end
+    const t1 = t0 + 0.02;
+    const t2 = t1 + 0.3;
+    const t3 = t2 + 0.2;
 
-    // Pitch sweep: 220 Hz → 80 Hz
-    osc.frequency.setValueAtTime(220, t0);
-    osc.frequency.exponentialRampToValueAtTime(80, t2);
+    osc.frequency.setValueAtTime(264, t0);
+    osc.frequency.exponentialRampToValueAtTime(88, t2);
 
-    // Filter cutoff also sweeps down for a "whooshing" quality
-    filter.frequency.setValueAtTime(800, t0);
-    filter.frequency.exponentialRampToValueAtTime(180, t2);
+    filter.frequency.setValueAtTime(600, t0);
+    filter.frequency.exponentialRampToValueAtTime(150, t2);
 
-    // Amplitude envelope
     gain.gain.setValueAtTime(0, t0);
-    gain.gain.linearRampToValueAtTime(0.1, t1);
-    gain.gain.setValueAtTime(0.1, t2);
+    gain.gain.linearRampToValueAtTime(0.08, t1);
+    gain.gain.setValueAtTime(0.08, t2);
     gain.gain.exponentialRampToValueAtTime(0.0001, t3);
 
     osc.connect(filter);
@@ -266,6 +223,217 @@ export function playTransitionSound(): void {
       gain.disconnect();
     };
   } catch {
-    // Silently fail — audio is non-critical
+    // Silently fail
   }
 }
+
+// ---------------------------------------------------------------------------
+// 8-Bit Retro Synthesizers for Pixel Astronaut Companion
+// ---------------------------------------------------------------------------
+
+let lastBounceTimestamp = 0;
+let lastThrusterTimestamp = 0;
+
+/**
+ * playRetroThrusterSound()
+ * Filtered white noise with low square pulse.
+ * Throttled to minimum 110ms interval.
+ */
+export function playRetroThrusterSound(): void {
+  const now = typeof performance !== "undefined" ? performance.now() : Date.now();
+  if (now - lastThrusterTimestamp < 110) return;
+  lastThrusterTimestamp = now;
+
+  const ctx = getCtx();
+  if (!ctx) return;
+
+  try {
+    const bufferSize = ctx.sampleRate * 0.08; // 80ms buffer
+    const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) {
+      data[i] = Math.random() * 2 - 1;
+    }
+
+    const noise = ctx.createBufferSource();
+    noise.buffer = buffer;
+
+    const filter = ctx.createBiquadFilter();
+    filter.type = "bandpass";
+    filter.frequency.setValueAtTime(380, ctx.currentTime);
+    filter.Q.setValueAtTime(3.0, ctx.currentTime);
+
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(0.045, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.075);
+
+    noise.connect(filter);
+    filter.connect(gain);
+    gain.connect(ctx.destination);
+
+    noise.start(ctx.currentTime);
+    noise.stop(ctx.currentTime + 0.08);
+  } catch {
+    // Ignore audio errors
+  }
+}
+
+/**
+ * playRetroJumpSound()
+ * Pitch-swept square wave ascending from 180Hz to 680Hz (zero-G fling/launch).
+ */
+export function playRetroJumpSound(): void {
+  const ctx = getCtx();
+  if (!ctx) return;
+
+  try {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    osc.type = "square";
+    const t0 = ctx.currentTime;
+    osc.frequency.setValueAtTime(180, t0);
+    osc.frequency.exponentialRampToValueAtTime(680, t0 + 0.12);
+
+    gain.gain.setValueAtTime(0.04, t0);
+    gain.gain.exponentialRampToValueAtTime(0.001, t0 + 0.12);
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+
+    osc.start(t0);
+    osc.stop(t0 + 0.13);
+  } catch {
+    // Ignore
+  }
+}
+
+/**
+ * playRetroBounceSound()
+ * Throttled to 120ms cooldown to prevent wall-corner buzz.
+ * Low 85Hz damped triangle pulse.
+ */
+export function playRetroBounceSound(): void {
+  const now = typeof performance !== "undefined" ? performance.now() : Date.now();
+  if (now - lastBounceTimestamp < 120) return;
+  lastBounceTimestamp = now;
+
+  const ctx = getCtx();
+  if (!ctx) return;
+
+  try {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    osc.type = "triangle";
+    const t0 = ctx.currentTime;
+    osc.frequency.setValueAtTime(85, t0);
+    osc.frequency.exponentialRampToValueAtTime(45, t0 + 0.09);
+
+    gain.gain.setValueAtTime(0.07, t0);
+    gain.gain.exponentialRampToValueAtTime(0.001, t0 + 0.09);
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+
+    osc.start(t0);
+    osc.stop(t0 + 0.1);
+  } catch {
+    // Ignore
+  }
+}
+
+/**
+ * playRetroCoinSound()
+ * Classic chiptune B5 (987.77Hz) -> E6 (1318.51Hz) pickup arpeggio.
+ */
+export function playRetroCoinSound(): void {
+  const ctx = getCtx();
+  if (!ctx) return;
+
+  try {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    osc.type = "square";
+    const t0 = ctx.currentTime;
+    osc.frequency.setValueAtTime(987.77, t0);
+    osc.frequency.setValueAtTime(1318.51, t0 + 0.065);
+
+    gain.gain.setValueAtTime(0.045, t0);
+    gain.gain.exponentialRampToValueAtTime(0.001, t0 + 0.22);
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+
+    osc.start(t0);
+    osc.stop(t0 + 0.23);
+  } catch {
+    // Ignore
+  }
+}
+
+/**
+ * playRetroSomersaultSound()
+ * Chiptune 4-note ascending burst (C6, E6, G6, C7).
+ */
+export function playRetroSomersaultSound(): void {
+  const ctx = getCtx();
+  if (!ctx) return;
+
+  try {
+    const notes = [1046.5, 1318.51, 1567.98, 2093.0];
+    const t0 = ctx.currentTime;
+
+    notes.forEach((freq, idx) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      const noteTime = t0 + idx * 0.045;
+
+      osc.type = "square";
+      osc.frequency.setValueAtTime(freq, noteTime);
+
+      gain.gain.setValueAtTime(0.03, noteTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, noteTime + 0.07);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.start(noteTime);
+      osc.stop(noteTime + 0.08);
+    });
+  } catch {
+    // Ignore
+  }
+}
+
+/**
+ * playRetroMenuSound()
+ * Crisp 8-bit blip for UI menu toggle.
+ */
+export function playRetroMenuSound(): void {
+  const ctx = getCtx();
+  if (!ctx) return;
+
+  try {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    osc.type = "sine";
+    const t0 = ctx.currentTime;
+    osc.frequency.setValueAtTime(659.25, t0); // E5
+    osc.frequency.setValueAtTime(880.0, t0 + 0.035); // A5
+
+    gain.gain.setValueAtTime(0.035, t0);
+    gain.gain.exponentialRampToValueAtTime(0.001, t0 + 0.08);
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+
+    osc.start(t0);
+    osc.stop(t0 + 0.09);
+  } catch {
+    // Ignore
+  }
+}
+

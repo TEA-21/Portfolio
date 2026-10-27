@@ -8,13 +8,17 @@
  *
  * VISUAL DESIGN
  * ─────────────
- * • Lines connect the four project nodes in an adjacency ring + cross diagonals:
+ * • Lines connect the six premier project nodes in a hexagonal perimeter + cross chords:
  *
- *     parleylab(-3,0,3)  ─── zerotrust(3,0,3)
- *          │           ╲   ╱       │
- *          │             ╳         │
- *          │           ╱   ╲       │
- *     civicguard(-3,0,-3) ─── mpmc(3,0,-3)
+ *              local-llm(0,0,3.5)
+ *             ╱                  ╲
+ *   shadowos(-3.5,0,2)     projectparrot(3.5,0,2)
+ *          │       ╲       ╱       │
+ *          │         ╳ ──          │
+ *          │       ╱       ╲       │
+ *     dryaf(-3.5,0,-2)     zerotrust(3.5,0,-2)
+ *             ╲                  ╱
+ *            aela-security(0,0,-3.5)
  *
  * • Color: cyan-focus (#38bdf8)
  * • Animation technique: Three.js r185's LineDashedMaterial exposes `scale`,
@@ -44,20 +48,25 @@ import * as THREE from "three";
 // Node positions (XZ plane, Y=0) — matches SceneContent.tsx
 // ---------------------------------------------------------------------------
 const NODE_POSITIONS: [number, number, number][] = [
-  [-3, 0,  3],  // 0: parleylab
-  [ 3, 0,  3],  // 1: zerotrust
-  [ 3, 0, -3],  // 2: mpmc
-  [-3, 0, -3],  // 3: civicguard
+  [-3.5, 0,  2.0], // 0: shadowos
+  [ 0.0, 0,  3.5], // 1: local-llm
+  [ 3.5, 0,  2.0], // 2: projectparrot
+  [ 3.5, 0, -2.0], // 3: zerotrust
+  [ 0.0, 0, -3.5], // 4: aela-security
+  [-3.5, 0, -2.0], // 5: dryaf
 ];
 
-// Adjacent ring + cross diagonals for richer data network topology
+// Hexagonal perimeter loop + cross-hub telemetry chords
 const CONNECTIONS: [number, number][] = [
-  [0, 1], // parleylab  ─── zerotrust  (top edge)
-  [1, 2], // zerotrust  ─── mpmc       (right edge)
-  [2, 3], // mpmc       ─── civicguard (bottom edge)
-  [3, 0], // civicguard ─── parleylab  (left edge)
-  [0, 2], // parleylab  ─── mpmc       (diagonal)
-  [1, 3], // zerotrust  ─── civicguard (diagonal)
+  [0, 1], // shadowos      ─── local-llm
+  [1, 2], // local-llm     ─── projectparrot
+  [2, 3], // projectparrot ─── zerotrust
+  [3, 4], // zerotrust     ─── aela-security
+  [4, 5], // aela-security ─── dryaf
+  [5, 0], // dryaf         ─── shadowos
+  [0, 3], // shadowos      ─── zerotrust (cross diagonal)
+  [1, 4], // local-llm     ─── aela-security (cross axis)
+  [2, 5], // projectparrot ─── dryaf (cross diagonal)
 ];
 
 const CYAN = new THREE.Color("#38bdf8");

@@ -2,50 +2,164 @@
 @tailwind components;
 @tailwind utilities;
 
+@font-face {
+  font-family: "JetBrains Mono";
+  src: url("/fonts/JetBrainsMono-Regular.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  --font-inter: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-jetbrains-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+}
+
 @layer base {
+  html {
+    scroll-behavior: smooth;
+    font-family: var(--font-inter);
+  }
   body {
-    @apply bg-slate-dark text-white font-sans overflow-x-hidden;
+    @apply bg-void-black text-starlight-white font-sans overflow-x-hidden;
+    background-color: #030712;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-jetbrains-mono);
   }
 }
 
-/* Hide native cursor when custom cyber cursor component is mounted */
+/* ── Cosmic Starfield & Nebula Particle Dust ───────────────────────── */
+.starfield-dust {
+  background-image: 
+    radial-gradient(1px 1px at 20px 30px, #ffffff, rgba(0, 0, 0, 0)),
+    radial-gradient(1px 1px at 40px 70px, rgba(196, 181, 253, 0.8), rgba(0, 0, 0, 0)),
+    radial-gradient(1.5px 1.5px at 90px 40px, rgba(251, 191, 36, 0.9), rgba(0, 0, 0, 0)),
+    radial-gradient(1px 1px at 160px 120px, #ffffff, rgba(0, 0, 0, 0)),
+    radial-gradient(1.5px 1.5px at 230px 180px, rgba(139, 92, 246, 0.7), rgba(0, 0, 0, 0)),
+    radial-gradient(1px 1px at 290px 80px, rgba(255, 255, 255, 0.6), rgba(0, 0, 0, 0));
+  background-repeat: repeat;
+  background-size: 320px 320px;
+}
+
+/* ── Deep Space Coordinate Grid ────────────────────────────────────── */
+.cosmic-grid {
+  background-image: 
+    linear-gradient(to right, rgba(139, 92, 246, 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(139, 92, 246, 0.05) 1px, transparent 1px);
+  background-size: 48px 48px;
+}
+
+/* ── Hide native cursor when custom cyber/starlight cursor is active ─ */
 .custom-cursor-active,
 .custom-cursor-active * {
   cursor: none !important;
 }
 
-/* CRT Scanline Overlay */
-.crt-scanlines {
-  background: linear-gradient(
-      rgba(18, 16, 16, 0) 50%,
-      rgba(0, 0, 0, 0.25) 50%
-    ),
-    linear-gradient(
-      90deg,
-      rgba(255, 0, 0, 0.02),
-      rgba(0, 255, 0, 0.01),
-      rgba(0, 0, 255, 0.02)
-    );
-  background-size: 100% 3px, 6px 100%;
-  animation: scanlineScroll 12s linear infinite;
-}
-
-@keyframes scanlineScroll {
-  0% {
-    background-position: 0 0;
-  }
-  100% {
-    background-position: 0 100%;
-  }
-}
-
-/* Radial Vignetting Effect */
+/* ── Deep Celestial Vignette ───────────────────────────────────────── */
 .vignette-overlay {
   background: radial-gradient(
     circle at center,
-    transparent 50%,
-    rgba(11, 15, 23, 0.6) 80%,
-    rgba(5, 8, 15, 0.92) 100%
+    transparent 45%,
+    rgba(3, 7, 18, 0.6) 75%,
+    rgba(2, 4, 10, 0.95) 100%
   );
 }
 
+/* ── Frosted Obsidian Glass Utilities ──────────────────────────────── */
+.glass-cosmic {
+  background: rgba(13, 19, 38, 0.55);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 
+    inset 0 1px 1px 0 rgba(255, 255, 255, 0.1),
+    0 10px 30px -10px rgba(0, 0, 0, 0.8);
+}
+
+.glass-cosmic:hover {
+  border-color: rgba(139, 92, 246, 0.35);
+  box-shadow: 
+    inset 0 1px 1px 0 rgba(255, 255, 255, 0.15),
+    0 0 25px -5px rgba(139, 92, 246, 0.25),
+    0 10px 30px -10px rgba(0, 0, 0, 0.9);
+}
+
+.glass-cosmic-card {
+  background: rgba(10, 15, 30, 0.65);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(139, 92, 246, 0.15);
+  box-shadow: 
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.08),
+    0 8px 32px 0 rgba(0, 0, 0, 0.6);
+}
+
+.glass-cosmic-modal {
+  background: rgba(9, 13, 29, 0.75);
+  backdrop-filter: blur(28px);
+  -webkit-backdrop-filter: blur(28px);
+  border: 1px solid rgba(139, 92, 246, 0.35);
+  box-shadow: 
+    inset 0 1px 1px 0 rgba(255, 255, 255, 0.15),
+    0 0 50px -10px rgba(139, 92, 246, 0.3),
+    0 25px 60px -15px rgba(0, 0, 0, 0.95);
+}
+
+/* ── Orbit Rotation & Keyframes ────────────────────────────────────── */
+@keyframes orbitSpinClockwise {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes orbitSpinCounter {
+  from { transform: rotate(360deg); }
+  to { transform: rotate(0deg); }
+}
+
+@keyframes radarSweep {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes laserPulse {
+  0% { stroke-dashoffset: 40; }
+  100% { stroke-dashoffset: 0; }
+}
+
+.animate-orbit-cw {
+  animation: orbitSpinClockwise 35s linear infinite;
+}
+
+.animate-orbit-ccw {
+  animation: orbitSpinCounter 45s linear infinite;
+}
+
+.animate-radar-sweep {
+  animation: radarSweep 4s linear infinite;
+  transform-origin: center center;
+}
+
+.animate-laser-pulse {
+  animation: laserPulse 1.4s linear infinite;
+}
+
+/* ── Volumetric Hologram Light Cone ────────────────────────────────── */
+.hologram-beam {
+  background: linear-gradient(
+    0deg,
+    rgba(139, 92, 246, 0.3) 0%,
+    rgba(99, 102, 241, 0.08) 60%,
+    transparent 100%
+  );
+  clip-path: polygon(35% 0%, 65% 0%, 100% 100%, 0% 100%);
+}
+
+@keyframes photonFlow {
+  0% { stroke-dashoffset: 100; }
+  100% { stroke-dashoffset: 0; }
+}
+
+.animate-photon-flow {
+  animation: photonFlow 2s linear infinite;
+}

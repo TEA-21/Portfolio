@@ -31,9 +31,9 @@ export type ProjectCategory =
 
 /** Evaluation focus roles for Speed Run mode. */
 export type EvaluationRole =
-  | "Full-Stack / Systems Engineering"
-  | "AI Tooling"
-  | "Rapid Prototyping";
+  | "AI Infrastructure & High-Perf Systems"
+  | "Cloud Security & Zero-Trust"
+  | "Full-Stack & Edge AI";
 
 /** World-space camera position. */
 export interface CameraCoordinates {
@@ -114,14 +114,16 @@ const ALL_CATEGORIES: ProjectCategory[] = [
  *   store.camera.y  →  panY  (world Z axis via targetLookAt.set(panX, 0, panY))
  *   store.camera.z  →  (unused)
  *
- * Node world positions: parleylab(-3,0,3), zerotrust(3,0,3), mpmc(3,0,-3), civicguard(-3,0,-3)
+ * Node world positions: Hexagonal perimeter (shadowos, local-llm, projectparrot, zerotrust, aela-security, dryaf)
  * So {x: worldX, y: worldZ} to correctly focus the camera on each node.
  */
 const NODE_POSITIONS: Record<string, CameraCoordinates> = {
-  parleylab: { x: -3, y: 3, z: 0 },
-  zerotrust: { x:  3, y: 3, z: 0 },
-  mpmc:      { x:  3, y: -3, z: 0 },
-  civicguard: { x: -3, y: -3, z: 0 },
+  shadowos:        { x: -3.5, y:  2.0, z: 0 },
+  "local-llm":     { x:  0.0, y:  3.5, z: 0 },
+  projectparrot:   { x:  3.5, y:  2.0, z: 0 },
+  zerotrust:       { x:  3.5, y: -2.0, z: 0 },
+  "aela-security": { x:  0.0, y: -3.5, z: 0 },
+  dryaf:           { x: -3.5, y: -2.0, z: 0 },
 };
 
 export const DEFAULT_PORTFOLIO_STATE: PortfolioState = {
@@ -177,12 +179,12 @@ export function createPortfolioStore(
     // -----------------------------------------------------------------------
     startSpeedRunTour: (role: EvaluationRole) => {
       const roleSequenceMap: Record<EvaluationRole, string[]> = {
-        "AI Tooling": ["parleylab", "mpmc"],
-        "Full-Stack / Systems Engineering": ["mpmc", "zerotrust"],
-        "Rapid Prototyping": ["civicguard", "zerotrust"],
+        "AI Infrastructure & High-Perf Systems": ["shadowos", "local-llm", "projectparrot"],
+        "Cloud Security & Zero-Trust": ["aela-security", "zerotrust"],
+        "Full-Stack & Edge AI": ["dryaf", "shadowos"],
       };
 
-      const sequence = roleSequenceMap[role] ?? ["parleylab", "mpmc"];
+      const sequence = roleSequenceMap[role] ?? ["shadowos", "local-llm", "projectparrot"];
       const firstNodeId = sequence[0];
       const coords = NODE_POSITIONS[firstNodeId] ?? DEFAULT_CAMERA;
 

@@ -11,10 +11,9 @@
  *
  * EVALUATION ROLES
  * ────────────────
- * Presents 3 focused evaluation options:
- *  1. Full-Stack / Systems Engineering (MPMC / ZeroTrust)
- *  2. AI Tooling (ParleyLab)
- *  3. Rapid Prototyping (CivicGuard)
+ *  1. AI Infrastructure & High-Perf Systems (ShadowOS / Colibri MoE / Project Parrot)
+ *  2. Cloud Security & Zero-Trust (AELA Security / ZeroTrust Finance)
+ *  3. Full-Stack & Edge AI (DryAF Oasis / ShadowOS MCP)
  *
  * DISPATCH BEHAVIOUR
  * ──────────────────
@@ -38,33 +37,33 @@ interface RoleOption {
 
 const ROLE_OPTIONS: RoleOption[] = [
   {
-    id: "Full-Stack / Systems Engineering",
-    title: "Full-Stack / Systems Engineering",
-    badge: "HARDWARE & DISTRIBUTED SYSTEMS",
+    id: "AI Infrastructure & High-Perf Systems",
+    title: "AI Infrastructure & High-Perf Systems",
+    badge: "MICROVMS, MOE STREAMING & EMBEDDED SLM",
     icon: "⚡",
     description:
-      "Deep dive into ESP32 microcontroller firmware, MQTT message queues, YOLOv8 edge vision, and zero-trust mobile backends.",
-    focusNodes: "MPMC System // ZeroTrust Finance",
-    accentColor: "emerald",
-  },
-  {
-    id: "AI Tooling",
-    title: "AI Tooling",
-    badge: "LLM ENGINEERING & AGENTS",
-    icon: "🧠",
-    description:
-      "Explore multi-agent negotiation frameworks, Python model fallback cascades (OpenRouter → Ollama), and real-time debate scoring.",
-    focusNodes: "ParleyLab AI Simulator",
+      "Deep dive into Rust MicroVM execution sandboxes, C++ NVMe MoE streaming engines, and bare-metal ESP32 micro-SLM inference.",
+    focusNodes: "ShadowOS // Colibri MoE // ProjectParrot",
     accentColor: "cyan",
   },
   {
-    id: "Rapid Prototyping",
-    title: "Rapid Prototyping",
-    badge: "SECURITY & PASSKEY ARCHITECTURE",
-    icon: "🚀",
+    id: "Cloud Security & Zero-Trust",
+    title: "Cloud Security & Zero-Trust",
+    badge: "EPHEMERAL IAM & ENCRYPTED LEDGERS",
+    icon: "🛡️",
     description:
-      "Inspect WebAuthn passwordless biometric flows, Solidity smart contract audit logs, and DigiLocker API integration.",
-    focusNodes: "CivicGuard Security Platform",
+      "Examine autonomous zero-standing IAM leasing with PyTorch LSTM anomaly detection, plus zero-trust encrypted financial architectures.",
+    focusNodes: "AELA Security // ZeroTrust Finance",
+    accentColor: "emerald",
+  },
+  {
+    id: "Full-Stack & Edge AI",
+    title: "Full-Stack & Edge AI",
+    badge: "CLIENT-SIDE CV & AUTONOMOUS AGENTS",
+    icon: "🌐",
+    description:
+      "Explore on-device HTML5 canvas computer vision water refraction verification, live Firebase applications, and AI teacher copilots.",
+    focusNodes: "DryAF Oasis // ShadowOS MCP",
     accentColor: "amber",
   },
 ];

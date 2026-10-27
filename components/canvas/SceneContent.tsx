@@ -22,10 +22,12 @@ interface ProjectConfig {
 
 /** Portfolio project nodes configuration. */
 const PROJECTS: ProjectConfig[] = [
-  { id: "parleylab", label: "ParleyLab", category: "AI Automation", position: [-3, 0, 3] },
-  { id: "zerotrust", label: "ZeroTrust Finance", category: "Security & Systems", position: [3, 0, 3] },
-  { id: "mpmc", label: "MPMC System", category: "Full-Stack Architecture", position: [3, 0, -3] },
-  { id: "civicguard", label: "Civic Guard", category: "Security & Systems", position: [-3, 0, -3] },
+  { id: "shadowos", label: "ShadowOS", category: "Security & Systems", position: [-3.5, 0, 2.0] },
+  { id: "local-llm", label: "Colibri MoE", category: "AI Automation", position: [0.0, 0, 3.5] },
+  { id: "projectparrot", label: "Project Parrot", category: "AI Automation", position: [3.5, 0, 2.0] },
+  { id: "zerotrust", label: "ZeroTrust Finance", category: "Security & Systems", position: [3.5, 0, -2.0] },
+  { id: "aela-security", label: "AELA Security", category: "Security & Systems", position: [0.0, 0, -3.5] },
+  { id: "dryaf", label: "DryAF Oasis", category: "Full-Stack Architecture", position: [-3.5, 0, -2.0] },
 ];
 
 export function SceneContent() {
