@@ -29,35 +29,8 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
+import ReactMarkdown from "react-markdown";
 import { usePortfolioStore } from "@/lib/store";
-
-// ---------------------------------------------------------------------------
-// Hardcoded Zero-Latency Tour Guide Messages
-// ---------------------------------------------------------------------------
-
-const SPEED_RUN_HARDCODED_MESSAGES: Record<string, string> = {
-  shadowos:
-    "Arriving at ShadowOS: Sub-second hardware-isolated ephemeral MicroVM sandbox for autonomous AI agents in Rust.",
-  "local-llm":
-    "Focusing on Colibri MoE Engine: Ultra-low footprint C++ MoE inference engine streaming Qwen 27B within a strict 5GB RAM ceiling.",
-  projectparrot:
-    "Inspecting Project Parrot: Custom ~1.97M parameter decoder-only Transformer micro-SLM running bare-metal C on ESP32 microcontrollers.",
-  zerotrust:
-    "Focusing on ZeroTrust Finance Tracker: Zero-trust encrypted ledger and cryptographic audit trails in Flutter & microservices.",
-  "aela-security":
-    "Arriving at AELA Cloud Security: Autonomous zero-standing privilege & JIT IAM leasing engine with PyTorch LSTM anomaly detection.",
-  dryaf:
-    "Currently viewing DryAF: Dorm hydration survival guide with on-device HTML5 canvas CV water refraction scanner & live app.",
-  // Web Graph fallbacks
-  parleylab:
-    "Viewing ParleyLab: An AI negotiation simulator powered by PPO reinforcement learning and multi-agent LLM coaching.",
-  "mpmc-project":
-    "Inspecting Edge-AI Smart Parking: YOLOv8 vehicle detection, Tesseract LPR, Li-Fi 3Hz flashlight unlock, and GDPR blur.",
-  mpmc:
-    "Inspecting Edge-AI Smart Parking: YOLOv8 vehicle detection, Tesseract LPR, Li-Fi 3Hz flashlight unlock, and GDPR blur.",
-  civicguard:
-    "Arriving at CivicGuard: Decentralized identity platform with WebAuthn biometric keys, ZKP, and WebAssembly.",
-};
 
 // ---------------------------------------------------------------------------
 // Camera pan position lookup
@@ -77,44 +50,93 @@ const NODE_POSITIONS: Record<string, { x: number; y: number; z: number }> = {
   civicguard:      { x: -3.0, y: -3.0, z: 0 },
 };
 
+const markdownComponents = {
+  h1: ({ children }: any) => (
+    <h1 className="text-xs font-bold text-cyan-300 uppercase tracking-wider mt-2 mb-1 border-b border-cyan-500/20 pb-0.5">
+      {children}
+    </h1>
+  ),
+  h2: ({ children }: any) => (
+    <h2 className="text-xs font-bold text-starlight-gold uppercase tracking-wider mt-2 mb-1">
+      {children}
+    </h2>
+  ),
+  h3: ({ children }: any) => (
+    <h3 className="text-[11px] font-semibold text-emerald-400 uppercase mt-1.5 mb-0.5">
+      {children}
+    </h3>
+  ),
+  p: ({ children }: any) => <p className="mb-1.5 last:mb-0 leading-relaxed">{children}</p>,
+  strong: ({ children }: any) => <strong className="font-bold text-white tracking-wide">{children}</strong>,
+  em: ({ children }: any) => <em className="italic text-cyan-200">{children}</em>,
+  ul: ({ children }: any) => <ul className="space-y-1 my-1.5 pl-3 list-disc marker:text-cyan-400">{children}</ul>,
+  ol: ({ children }: any) => <ol className="space-y-1 my-1.5 pl-3 list-decimal marker:text-starlight-gold">{children}</ol>,
+  li: ({ children }: any) => <li className="pl-0.5 leading-relaxed">{children}</li>,
+  code: ({ children }: any) => (
+    <code className="font-mono text-[10px] bg-void-black/80 text-cyan-300 px-1 py-0.5 rounded border border-cyan-500/30">
+      {children}
+    </code>
+  ),
+  a: ({ href, children }: any) => (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="text-cyan-400 hover:text-cyan-200 underline decoration-cyan-400/50 hover:decoration-cyan-200"
+    >
+      {children}
+    </a>
+  ),
+};
+
 export function MascotChat() {
   const [isOpen, setIsOpen] = useState(false);
   const [input, setInput] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const processedToolCalls = useRef<Set<string>>(new Set());
 
-  // Track whether a tour message has been appended for each step
-  const lastTourStepSent = useRef<number>(-1);
-
   // Store state & actions
   const setCamera = usePortfolioStore((s) => s.setCamera);
   const setZoom = usePortfolioStore((s) => s.setZoom);
   const setFocusedNodeId = usePortfolioStore((s) => s.setFocusedNodeId);
+  const setSelectedProjectId = usePortfolioStore((s) => s.setSelectedProjectId);
   const setInspection = usePortfolioStore((s) => s.setInspection);
-
-  // Speed Run tour state
-  const activeRole = usePortfolioStore((s) => s.activeRole);
-  const currentStepIndex = usePortfolioStore((s) => s.currentStepIndex);
-  const speedRunSequence = usePortfolioStore((s) => s.speedRunSequence);
   const focusedNodeId = usePortfolioStore((s) => s.focusedNodeId);
+  const isSpeedRunActive = usePortfolioStore((s) => s.isSpeedRunActive);
+  const speedRunStepIndex = usePortfolioStore((s) => s.speedRunStepIndex);
+  const speedRunProjects = usePortfolioStore((s) => s.speedRunProjects);
 
   /**
    * Helper to dispatch store actions when focusProjectNode is invoked
    */
   const executeFocusProjectNode = useCallback(
-    (nodeId: string) => {
-      const targetPos = NODE_POSITIONS[nodeId];
-      if (!targetPos) {
-        console.warn(`[MascotChat] Unknown nodeId received: ${nodeId}`);
-        return;
-      }
-      console.log(`[MascotChat] Executing 3D focus on node: ${nodeId}`, targetPos);
-      setCamera(targetPos);
-      setZoom(2.5);
+    (rawNodeId: string) => {
+      let nodeId = rawNodeId;
+      const lower = rawNodeId.toLowerCase();
+      if (lower.includes("shadow")) nodeId = "shadowos";
+      else if (lower.includes("colibri") || lower.includes("llm") || lower.includes("moe")) nodeId = "local-llm";
+      else if (lower.includes("parrot") || lower.includes("esp32")) nodeId = "projectparrot";
+      else if (lower.includes("zerotrust") || lower.includes("finance")) nodeId = "zerotrust";
+      else if (lower.includes("aela") || lower.includes("cloud")) nodeId = "aela-security";
+      else if (lower.includes("dryaf") || lower.includes("water") || lower.includes("oasis")) nodeId = "dryaf";
+      else if (lower.includes("parking") || lower.includes("mpmc") || lower.includes("yolo")) nodeId = "mpmc-project";
+      else if (lower.includes("civic") || lower.includes("guard")) nodeId = "civicguard";
+      else if (lower.includes("parley")) nodeId = "parleylab";
+      else if (lower.includes("copilot") || lower.includes("teacher")) nodeId = "TeacherCopilot";
+
+      console.log(`[MascotChat] Opening relevant project node for recruiter: ${nodeId}`);
+      setSelectedProjectId(nodeId);
       setFocusedNodeId(nodeId);
-      setInspection();
+      const targetPos = NODE_POSITIONS[nodeId];
+      if (targetPos) {
+        setCamera(targetPos);
+        setZoom(2.5);
+        setInspection();
+      }
+      const el = document.getElementById("interactive-project-web");
+      if (el) el.scrollIntoView({ behavior: "smooth" });
     },
-    [setCamera, setZoom, setFocusedNodeId, setInspection]
+    [setSelectedProjectId, setFocusedNodeId, setCamera, setZoom, setInspection]
   );
 
   // Initialize Vercel AI SDK useChat
@@ -177,12 +199,24 @@ export function MascotChat() {
     sendMessage({ text });
   };
 
-  // Secondary effect watching streamed message parts for tool invocations
+  // Secondary effect watching streamed message parts for tool invocations or inline [FOCUS:id] tags
   useEffect(() => {
     if (!messages.length) return;
 
     const lastMsg = messages[messages.length - 1];
-    if (lastMsg.role !== "assistant" || !lastMsg.parts) return;
+    if (lastMsg.role !== "assistant") return;
+
+    // Check for inline [FOCUS:id] tag from free model fallback
+    const rawContent = (lastMsg as any).content ?? (lastMsg.parts ? lastMsg.parts.filter((p: any) => p.type === "text").map((p: any) => p.text).join("") : "");
+    if (typeof rawContent === "string") {
+      const match = rawContent.match(/\[FOCUS:([a-zA-Z0-9_-]+)\]/);
+      if (match && match[1] && !processedToolCalls.current.has(`inline-${lastMsg.id}-${match[1]}`)) {
+        processedToolCalls.current.add(`inline-${lastMsg.id}-${match[1]}`);
+        executeFocusProjectNode(match[1]);
+      }
+    }
+
+    if (!lastMsg.parts) return;
 
     for (const part of lastMsg.parts) {
       const partType = (part as any).type;
@@ -211,48 +245,6 @@ export function MascotChat() {
     }
   }, [messages, executeFocusProjectNode]);
 
-  // -------------------------------------------------------------------------
-  // Zero-Latency Speed Run Tour Guide: instantly append hardcoded messages
-  // -------------------------------------------------------------------------
-  useEffect(() => {
-    const isTourActive =
-      activeRole !== null &&
-      speedRunSequence.length > 0 &&
-      currentStepIndex < speedRunSequence.length;
-
-    // Guard: only fire if this step hasn't been narrated yet
-    if (!isTourActive || currentStepIndex === lastTourStepSent.current) {
-      return;
-    }
-
-    const nodeId = speedRunSequence[currentStepIndex] ?? focusedNodeId;
-    if (!nodeId || !(nodeId in SPEED_RUN_HARDCODED_MESSAGES)) return;
-
-    // Mark this step index as processed
-    lastTourStepSent.current = currentStepIndex;
-
-    // Auto-open chat terminal instantly
-    setIsOpen(true);
-
-    const messageText = SPEED_RUN_HARDCODED_MESSAGES[nodeId];
-
-    // Append hardcoded message instantly to the chat UI without calling LLM API
-    setMessages((prevMessages) => [
-      ...prevMessages,
-      {
-        id: `speedrun-${nodeId}-${currentStepIndex}-${Date.now()}`,
-        role: "assistant",
-        content: messageText,
-        parts: [{ type: "text", text: messageText }],
-      } as any,
-    ]);
-  }, [currentStepIndex, activeRole, speedRunSequence, focusedNodeId, setMessages]);
-
-  // Reset tour step tracking when a fresh tour starts (activeRole changes)
-  useEffect(() => {
-    lastTourStepSent.current = -1;
-  }, [activeRole]);
-
   // Auto-scroll chat to latest message
   useEffect(() => {
     if (isOpen) {
@@ -262,11 +254,12 @@ export function MascotChat() {
 
   const isLoading = status === "submitted" || status === "streaming";
 
+  if (!isOpen) return null;
+
   return (
     <div className="fixed bottom-6 left-6 z-30 pointer-events-auto flex flex-col items-start font-mono">
       {/* Expanded Chat Box */}
-      {isOpen && (
-        <div className="mb-3 w-80 sm:w-96 rounded-xl border border-cyan-focus/40 bg-slate-dark/95 p-4 shadow-2xl shadow-cyan-focus/20 backdrop-blur-md flex flex-col max-h-[420px] transition-all">
+      <div className="mb-3 w-80 sm:w-96 rounded-xl border border-cyan-focus/40 bg-slate-dark/95 p-4 shadow-2xl shadow-cyan-focus/20 backdrop-blur-md flex flex-col max-h-[420px] transition-all">
           {/* Header */}
           <div className="flex items-center justify-between border-b border-cyan-focus/20 pb-2 mb-3">
             <div className="flex items-center gap-2">
@@ -279,9 +272,9 @@ export function MascotChat() {
               </span>
             </div>
             {/* Tour progress badge */}
-            {activeRole !== null && speedRunSequence.length > 0 && (
+            {isSpeedRunActive && speedRunProjects.length > 0 && (
               <span className="text-[10px] text-amber-caution font-mono border border-amber-caution/40 bg-amber-950/40 px-2 py-0.5 rounded">
-                TOUR {currentStepIndex + 1}/{speedRunSequence.length}
+                TOUR {speedRunStepIndex + 1}/{speedRunProjects.length}
               </span>
             )}
             <button
@@ -301,12 +294,16 @@ export function MascotChat() {
             ) : (
               messages.map((m) => {
                 // Extract text content from parts or fallback to content field
-                const textContent = m.parts
+                const rawTextContent = m.parts
                   ? m.parts
                       .filter((p) => p.type === "text")
                       .map((p: any) => p.text)
                       .join("")
                   : (m as any).content;
+
+                const textContent = typeof rawTextContent === "string"
+                  ? rawTextContent.replace(/\[FOCUS:[a-zA-Z0-9_-]+\]/g, "").trim()
+                  : rawTextContent;
 
                 // Don't render empty messages (e.g. pure tool-call assistant turns)
                 if (
@@ -332,14 +329,22 @@ export function MascotChat() {
                       {m.role === "user" ? "YOU" : "ARIA"}
                     </span>
                     <div
-                      className={`p-2.5 rounded-lg max-w-[88%] leading-relaxed whitespace-pre-line ${
+                      className={`p-2.5 rounded-lg max-w-[88%] text-xs ${
                         m.role === "user"
-                          ? "bg-cyan-focus/20 text-cyan-100 border border-cyan-focus/40"
+                          ? "bg-cyan-focus/20 text-cyan-100 border border-cyan-focus/40 whitespace-pre-line leading-relaxed"
                           : "bg-slate-900/90 text-slate-200 border border-emerald-highlight/30"
                       }`}
                     >
                       {/* Message text content */}
-                      {textContent}
+                      {m.role === "user" ? (
+                        textContent
+                      ) : (
+                        <div className="prose prose-invert max-w-none text-xs">
+                          <ReactMarkdown components={markdownComponents}>
+                            {textContent}
+                          </ReactMarkdown>
+                        </div>
+                      )}
 
                       {/* Tool invocation badges */}
                       {m.parts?.map((part, pIdx) => {
@@ -390,9 +395,9 @@ export function MascotChat() {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder={
-                activeRole
+                focusedNodeId
                   ? "Ask ARIA about this node..."
-                  : "Ask ARIA about projects..."
+                  : "Ask ARIA about Taanush or projects..."
               }
               className="flex-1 bg-slate-900/90 border border-slate-700 focus:border-cyan-focus rounded px-2.5 py-1.5 text-xs text-white outline-none transition-colors placeholder:text-slate-500"
             />
@@ -405,21 +410,6 @@ export function MascotChat() {
             </button>
           </form>
         </div>
-      )}
-
-      {/* Floating Mascot Trigger Badge Button */}
-      <button
-        onClick={() => setIsOpen((prev) => !prev)}
-        className="group relative flex items-center gap-2.5 px-3.5 py-2 rounded-full border border-cyan-focus/50 bg-slate-dark/90 text-cyan-focus shadow-lg shadow-cyan-focus/20 hover:border-cyan-focus hover:shadow-cyan-focus/40 transition-all active:scale-95"
-      >
-        <span className="relative flex h-3 w-3">
-          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-highlight opacity-75"></span>
-          <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-highlight"></span>
-        </span>
-        <span className="text-xs font-bold tracking-wider uppercase drop-shadow-[0_0_8px_rgba(56,189,248,0.5)]">
-          {isOpen ? "CLOSE ARIA AI" : "ARIA AI MASCOT"}
-        </span>
-      </button>
     </div>
   );
 }

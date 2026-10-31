@@ -14,12 +14,43 @@
  */
 
 let _ctx: AudioContext | null = null;
-let isAudioMuted = false;
+let isAudioMuted = typeof window !== "undefined" ? localStorage.getItem("portfolio_audio_muted") === "true" : false;
+
+/** Ensure AudioContext is resumed upon direct user gesture (touch/click). */
+export function ensureAudioResumed(): void {
+  if (typeof window === "undefined" || isAudioMuted) return;
+  if (!_ctx) {
+    try {
+      const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      _ctx = new AudioCtx();
+    } catch {
+      return;
+    }
+  }
+  if (_ctx && _ctx.state === "suspended") {
+    _ctx.resume().catch(() => {});
+  }
+}
 
 /** Toggle global audio mute state */
 export function toggleAudioMute(): boolean {
   isAudioMuted = !isAudioMuted;
+  if (typeof window !== "undefined") {
+    try {
+      localStorage.setItem("portfolio_audio_muted", String(isAudioMuted));
+    } catch {}
+  }
   return isAudioMuted;
+}
+
+/** Explicitly set mute state */
+export function setAudioMutedState(muted: boolean): void {
+  isAudioMuted = muted;
+  if (typeof window !== "undefined") {
+    try {
+      localStorage.setItem("portfolio_audio_muted", String(muted));
+    } catch {}
+  }
 }
 
 /** Get global audio mute state */
@@ -436,4 +467,167 @@ export function playRetroMenuSound(): void {
     // Ignore
   }
 }
+
+/**
+ * playRetroExplosionSound()
+ * Deep low-frequency noise burst for asteroid impact.
+ */
+export function playRetroExplosionSound(): void {
+  const ctx = getCtx();
+  if (!ctx) return;
+
+  try {
+    const t0 = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    osc.type = "sawtooth";
+    osc.frequency.setValueAtTime(140, t0);
+    osc.frequency.exponentialRampToValueAtTime(30, t0 + 0.28);
+
+    gain.gain.setValueAtTime(0.08, t0);
+    gain.gain.exponentialRampToValueAtTime(0.001, t0 + 0.3);
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+
+    osc.start(t0);
+    osc.stop(t0 + 0.31);
+  } catch {
+    // Ignore
+  }
+}
+
+/**
+ * playRetroLaserSound()
+ * High-to-low fast chiptune laser chirp.
+ */
+export function playRetroLaserSound(): void {
+  const ctx = getCtx();
+  if (!ctx) return;
+
+  try {
+    const t0 = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    osc.type = "sawtooth";
+    osc.frequency.setValueAtTime(880, t0);
+    osc.frequency.exponentialRampToValueAtTime(110, t0 + 0.12);
+
+    gain.gain.setValueAtTime(0.04, t0);
+    gain.gain.exponentialRampToValueAtTime(0.001, t0 + 0.13);
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+
+    osc.start(t0);
+    osc.stop(t0 + 0.14);
+  } catch {
+    // Ignore
+  }
+}
+
+/**
+ * playGameOverSound()
+ * Descending dissonant chiptune arpeggio.
+ */
+export function playGameOverSound(): void {
+  const ctx = getCtx();
+  if (!ctx) return;
+
+  try {
+    const t0 = ctx.currentTime;
+    const notes = [440, 415.3, 392, 349.23]; // A4, G#4, G4, F4
+
+    notes.forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      const noteTime = t0 + i * 0.12;
+
+      osc.type = "sawtooth";
+      osc.frequency.setValueAtTime(freq, noteTime);
+
+      gain.gain.setValueAtTime(0.05, noteTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, noteTime + 0.18);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.start(noteTime);
+      osc.stop(noteTime + 0.19);
+    });
+  } catch {
+    // Ignore
+  }
+}
+
+/**
+ * playVictoryFanfare()
+ * Ascending triumphal chiptune fanfare.
+ */
+export function playVictoryFanfare(): void {
+  const ctx = getCtx();
+  if (!ctx) return;
+
+  try {
+    const t0 = ctx.currentTime;
+    const notes = [523.25, 659.25, 783.99, 1046.5]; // C5, E5, G5, C6
+
+    notes.forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      const noteTime = t0 + i * 0.09;
+
+      osc.type = "triangle";
+      osc.frequency.setValueAtTime(freq, noteTime);
+
+      gain.gain.setValueAtTime(0.06, noteTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, noteTime + 0.22);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.start(noteTime);
+      osc.stop(noteTime + 0.23);
+    });
+  } catch {
+    // Ignore
+  }
+}
+
+/**
+ * playRetroSpeechBlip()
+ * Soft, pleasant 2-tone chiptune blip for mascot dialogue popups and cycles.
+ */
+export function playRetroSpeechBlip(): void {
+  const ctx = getCtx();
+  if (!ctx) return;
+
+  try {
+    const t0 = ctx.currentTime;
+    const notes = [587.33, 880.0]; // D5 -> A5 micro-chirp
+
+    notes.forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      const noteTime = t0 + i * 0.045;
+
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(freq, noteTime);
+
+      gain.gain.setValueAtTime(0.04, noteTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, noteTime + 0.06);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.start(noteTime);
+      osc.stop(noteTime + 0.07);
+    });
+  } catch {
+    // Ignore
+  }
+}
+
 

@@ -149,19 +149,9 @@ void main() {
   vec2 uv = v_uv;
   float aspect = u_resolution.x / u_resolution.y;
 
-  // 1. Aspect-Corrected Gravitational Cursor Pinch / Repulsion
-  vec2 aspectDelta = vec2((uv.x - u_mouse.x) * aspect, uv.y - u_mouse.y);
-  float mouseDist = length(aspectDelta);
-  vec2 dir = normalize(aspectDelta + 0.0001);
-  float mouseRepel = smoothstep(0.42, 0.0, mouseDist);
-  vec2 displacement = dir * mouseRepel * 0.14;
-
-  // Displaced UV coordinates for the nebula
-  vec2 displacedUV = uv + vec2(displacement.x / aspect, displacement.y);
-
-  // 2. Radial Fly-Through Scroll Math (Dividing expands outward)
+  // 1. Radial Fly-Through Scroll Math (Dividing expands outward)
   float zoomScale = 1.0 + u_scroll * 1.8;
-  vec2 scrolledUV = (displacedUV - 0.5) / zoomScale + 0.5;
+  vec2 scrolledUV = (uv - 0.5) / zoomScale + 0.5;
 
   // Opacity dissipation: keeps vibrant JWST nebula 100% visible through Hero and About Me,
   // then smoothly disperses into the deep starfield void for the project system.

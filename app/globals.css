@@ -56,6 +56,12 @@
   cursor: none !important;
 }
 
+/* ── Fallback pointer visibility on minigame interactive buttons ─────── */
+.custom-cursor-active .minigame-cursor-native,
+.custom-cursor-active .minigame-cursor-native * {
+  cursor: pointer !important;
+}
+
 /* ── Deep Celestial Vignette ───────────────────────────────────────── */
 .vignette-overlay {
   background: radial-gradient(

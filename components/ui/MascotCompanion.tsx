@@ -10,48 +10,41 @@
 
 import { useState } from "react";
 import { usePortfolioStore } from "@/lib/store";
-import { playHoverSound, playSelectSound, playTransitionSound } from "@/lib/audio";
+import { playHoverSound, playSelectSound, playTransitionSound, ensureAudioResumed } from "@/lib/audio";
 
 export function MascotCompanion() {
   const [isDialogueOpen, setIsDialogueOpen] = useState(false);
-  const [minigameAlert, setMinigameAlert] = useState(false);
 
-  const setSpeedRun = usePortfolioStore((s) => s.setSpeedRun);
-  const startSpeedRunTour = usePortfolioStore((s) => s.startSpeedRunTour);
+  const startSolarTour = usePortfolioStore((s) => s.startSolarTour);
+  const setMinigameOpen = usePortfolioStore((s) => s.setMinigameOpen);
 
   const handleOpenDialogue = () => {
+    ensureAudioResumed();
     playSelectSound();
     setIsDialogueOpen(true);
-    if (typeof window !== "undefined") {
-      window.dispatchEvent(new CustomEvent("summon-mascot-to-bio"));
-    }
   };
 
   const handleInitiateSpeedTour = () => {
+    ensureAudioResumed();
     playTransitionSound();
     playSelectSound();
     setIsDialogueOpen(false);
 
-    // Trigger Speed Run tour in Zustand store
-    if (startSpeedRunTour) {
-      startSpeedRunTour("AI Infrastructure & High-Perf Systems");
-    } else if (setSpeedRun) {
-      setSpeedRun();
-    }
+    // Trigger 360° Solar Tour in Zustand store
+    startSolarTour();
 
-    // Scroll smoothly to project network section
-    const el = document.getElementById("interactive-project-web") || document.getElementById("node-network-map");
+    // Scroll smoothly to planetary solar system section
+    const el = document.getElementById("interactive-project-web");
     if (el) {
       el.scrollIntoView({ behavior: "smooth" });
     }
   };
 
   const handlePlayMinigame = () => {
+    ensureAudioResumed();
     playSelectSound();
-    setMinigameAlert(true);
-    setTimeout(() => {
-      setMinigameAlert(false);
-    }, 3500);
+    setIsDialogueOpen(false);
+    setMinigameOpen(true);
   };
 
   return (
@@ -90,13 +83,6 @@ export function MascotCompanion() {
             ✦
           </span>
         </button>
-
-        {/* Minigame alert notification toast */}
-        {minigameAlert && (
-          <div className="absolute left-full ml-4 top-1/2 -translate-y-1/2 whitespace-nowrap rounded-xl border border-starlight-gold/60 bg-void-card/95 px-4 py-2 font-mono text-xs font-bold text-starlight-gold shadow-[0_0_20px_rgba(251,191,36,0.35)] backdrop-blur-xl animate-fade-in z-30">
-            [ SYSTEM ALERT: CELESTIAL SIMULATION LOADING... ]
-          </div>
-        )}
       </div>
 
       {/* ── NPC Dialogue Modal ────────────────────────────────────── */}

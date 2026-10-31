@@ -57,20 +57,6 @@ export function AboutMeHero() {
     >
       {/* ── Content Container (Clean, unobstructed WebGL view) ────── */}
       <div className="relative z-10 flex flex-col items-center text-center gap-7 max-w-4xl pt-8">
-        {/* Celestial Observatory Status Badge */}
-        <div className="inline-flex items-center gap-2.5 rounded-full border border-nebula-violet/30 bg-nebula-violet/10 px-4 py-1.5 backdrop-blur-[2px] shadow-[0_0_20px_rgba(139,92,246,0.2)]">
-          <span className="relative flex h-2 w-2">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-starlight-gold opacity-75" />
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-starlight-gold" />
-          </span>
-          <span className="font-mono text-xs uppercase tracking-[0.25em] text-nebula-lavender">
-            STELLAR OBSERVATORY // AI ARCHITECT
-          </span>
-          <span className="font-mono text-starlight-gold/80 text-[10px]">
-            [ORBIT NOMINAL]
-          </span>
-        </div>
-
         {/* Monumental Astronomical Headline */}
         <div className="relative w-full">
           {/* Subtle celestial orbital compass lines */}

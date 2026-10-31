@@ -53,13 +53,45 @@ export interface PortfolioState {
 
   // --- Project focus & filtering ---
   focusedNodeId: string | null;
+  selectedProjectId: string | null;
   activeCategories: ProjectCategory[];
   activeRole: EvaluationRole | null;
 
   // --- Speed Run Choreography ---
   speedRunSequence: string[];
   currentStepIndex: number;
+
+  // --- Speed Run Tour (5 Flagship Projects) ---
+  isSpeedRunActive: boolean;
+  speedRunStepIndex: number;
+  speedRunProjects: string[];
+
+  // --- Solar System 360 Tour ---
+  isSolarTourActive: boolean;
+  activeTourProject: any | null;
+
+  // --- Orbital Minigame ---
+  isMinigameOpen: boolean;
+
+  // --- Audio State ---
+  isAudioMuted: boolean;
 }
+
+export const SPEED_RUN_PROJECTS = [
+  "shadowos",
+  "local-llm",
+  "projectparrot",
+  "mpmc-project",
+  "aela-security",
+] as const;
+
+export const SPEED_RUN_ONELINERS: Record<string, string> = {
+  shadowos: "ShadowOS — Sub-second hardware-isolated MicroVM sandbox for autonomous AI agents in Rust.",
+  "local-llm": "Colibri MoE — Ultra-low footprint C++ MoE inference engine streaming Qwen 27B under 5GB RAM.",
+  projectparrot: "Project Parrot — Custom 1.97M Transformer SLM in bare-metal C on ESP32 microcontrollers.",
+  "mpmc-project": "Edge-AI Smart Parking — Patent-pending YOLOv8 vision system with Li-Fi optical unlock & lock-free queues.",
+  "aela-security": "AELA Cloud Security — Autonomous zero-standing privilege & JIT IAM leasing with PyTorch LSTM anomaly detection.",
+};
 
 /** All actions available on the portfolio store. */
 export interface PortfolioActions {
@@ -73,16 +105,31 @@ export interface PortfolioActions {
   setMode: (mode: InteractionMode) => void;
 
   // Speed run tour actions
-  startSpeedRunTour: (role: EvaluationRole) => void;
+  startSpeedRunTour: (role?: EvaluationRole) => void;
   advanceSpeedRun: () => void;
+  nextSpeedRunStep: () => void;
+  endSpeedRunTour: () => void;
+
+  // 360 Solar Tour actions
+  startSolarTour: () => void;
+  stopSolarTour: () => void;
+  setActiveTourProject: (project: any | null) => void;
+
+  // Minigame actions
+  setMinigameOpen: (isOpen: boolean) => void;
+
+  // Audio actions
+  toggleAudioMuted: () => boolean;
+  setAudioMuted: (muted: boolean) => void;
 
   // Camera actions
   setCamera: (coords: Partial<CameraCoordinates>) => void;
   setZoom: (zoom: number) => void;
   resetCamera: () => void;
 
-  // Project focus
+  // Project focus & selection
   setFocusedNodeId: (id: string | null) => void;
+  setSelectedProjectId: (id: string | null) => void;
 
   // Category filtering
   toggleCategory: (category: ProjectCategory) => void;
@@ -131,10 +178,18 @@ export const DEFAULT_PORTFOLIO_STATE: PortfolioState = {
   camera: DEFAULT_CAMERA,
   zoom: DEFAULT_ZOOM,
   focusedNodeId: null,
+  selectedProjectId: null,
   activeCategories: ALL_CATEGORIES,
   activeRole: null,
   speedRunSequence: [],
   currentStepIndex: 0,
+  isSpeedRunActive: false,
+  speedRunStepIndex: 0,
+  speedRunProjects: [...SPEED_RUN_PROJECTS],
+  isSolarTourActive: false,
+  activeTourProject: null,
+  isMinigameOpen: false,
+  isAudioMuted: typeof window !== "undefined" ? localStorage.getItem("portfolio_audio_muted") === "true" : false,
 };
 
 // ---------------------------------------------------------------------------
@@ -177,25 +232,54 @@ export function createPortfolioStore(
     // -----------------------------------------------------------------------
     // Speed run tour actions
     // -----------------------------------------------------------------------
-    startSpeedRunTour: (role: EvaluationRole) => {
-      const roleSequenceMap: Record<EvaluationRole, string[]> = {
-        "AI Infrastructure & High-Perf Systems": ["shadowos", "local-llm", "projectparrot"],
-        "Cloud Security & Zero-Trust": ["aela-security", "zerotrust"],
-        "Full-Stack & Edge AI": ["dryaf", "shadowos"],
-      };
-
-      const sequence = roleSequenceMap[role] ?? ["shadowos", "local-llm", "projectparrot"];
+    startSpeedRunTour: (role?: EvaluationRole) => {
+      const sequence = [...SPEED_RUN_PROJECTS];
       const firstNodeId = sequence[0];
       const coords = NODE_POSITIONS[firstNodeId] ?? DEFAULT_CAMERA;
 
       set({
-        activeRole: role,
+        isSpeedRunActive: true,
+        speedRunStepIndex: 0,
+        speedRunProjects: sequence,
+        isSolarTourActive: false, // Ensure camera spin is disabled
+        isMinigameOpen: false,
+        selectedProjectId: null,
+        activeRole: role ?? null,
         speedRunSequence: sequence,
         currentStepIndex: 0,
         focusedNodeId: firstNodeId,
         camera: coords,
         zoom: 2.5,
-        mode: "inspection",
+        mode: "speedRun",
+      });
+    },
+
+    nextSpeedRunStep: () => {
+      set((state) => {
+        const next = state.speedRunStepIndex + 1;
+        if (next >= state.speedRunProjects.length) {
+          return {
+            isSpeedRunActive: false,
+            speedRunStepIndex: 0,
+            selectedProjectId: null,
+            mode: "idle",
+          };
+        }
+        return {
+          speedRunStepIndex: next,
+          currentStepIndex: next,
+          selectedProjectId: null,
+          focusedNodeId: state.speedRunProjects[next],
+        };
+      });
+    },
+
+    endSpeedRunTour: () => {
+      set({
+        isSpeedRunActive: false,
+        speedRunStepIndex: 0,
+        selectedProjectId: null,
+        mode: "idle",
       });
     },
 
@@ -240,9 +324,47 @@ export function createPortfolioStore(
     resetCamera: () => set({ camera: DEFAULT_CAMERA, zoom: DEFAULT_ZOOM }),
 
     // -----------------------------------------------------------------------
-    // Project focus actions
+    // Project focus & selection actions
     // -----------------------------------------------------------------------
     setFocusedNodeId: (id) => set({ focusedNodeId: id }),
+    setSelectedProjectId: (id) => set({ selectedProjectId: id }),
+
+    // -----------------------------------------------------------------------
+    // 360 Solar Tour actions
+    // -----------------------------------------------------------------------
+    startSolarTour: () => set({ isSolarTourActive: true, isMinigameOpen: false }),
+    stopSolarTour: () => set({ isSolarTourActive: false, activeTourProject: null }),
+    setActiveTourProject: (project) => set({ activeTourProject: project }),
+
+    // -----------------------------------------------------------------------
+    // Minigame actions
+    // -----------------------------------------------------------------------
+    setMinigameOpen: (isOpen) => set({ isMinigameOpen: isOpen, isSolarTourActive: isOpen ? false : undefined }),
+
+    // -----------------------------------------------------------------------
+    // Audio actions
+    // -----------------------------------------------------------------------
+    toggleAudioMuted: () => {
+      let nextMuted = false;
+      set((state) => {
+        nextMuted = !state.isAudioMuted;
+        if (typeof window !== "undefined") {
+          try {
+            localStorage.setItem("portfolio_audio_muted", String(nextMuted));
+          } catch {}
+        }
+        return { isAudioMuted: nextMuted };
+      });
+      return nextMuted;
+    },
+    setAudioMuted: (muted) => {
+      if (typeof window !== "undefined") {
+        try {
+          localStorage.setItem("portfolio_audio_muted", String(muted));
+        } catch {}
+      }
+      set({ isAudioMuted: muted });
+    },
 
     // -----------------------------------------------------------------------
     // Category filtering actions

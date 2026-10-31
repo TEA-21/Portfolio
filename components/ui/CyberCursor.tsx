@@ -214,7 +214,7 @@ export function CyberCursor() {
   return (
     <canvas
       ref={canvasRef}
-      className="pointer-events-none fixed inset-0 z-[99999] overflow-hidden select-none"
+      className="pointer-events-none fixed inset-0 z-[100005] overflow-hidden select-none"
     />
   );
 }

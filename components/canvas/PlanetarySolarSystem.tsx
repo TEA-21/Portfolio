@@ -18,6 +18,7 @@ import { OrbitControls, Html } from "@react-three/drei";
 import * as THREE from "three";
 import { ALL_PROJECTS } from "@/lib/projects";
 import { playHoverSound, playSelectSound, playTransitionSound } from "@/lib/audio";
+import { usePortfolioStore, usePortfolioStoreApi } from "@/lib/store";
 
 // ---------------------------------------------------------------------------
 // 1. Data Definitions
@@ -812,6 +813,7 @@ function MoonOrb({
       {/* 3D Billboarded Project Capsule HTML Card */}
       <Html position={[0, 0.48, 0]} center distanceFactor={13} zIndexRange={[120, 0]}>
         <div
+          data-project-moon={moon.id}
           onMouseEnter={() => {
             playHoverSound();
             onHover();
@@ -823,7 +825,7 @@ function MoonOrb({
             playTransitionSound();
             onSelect();
           }}
-          className="cursor-pointer transition-all duration-300 transform hover:scale-110 flex items-center gap-2 px-3 py-1.5 rounded-full border bg-void-black/90 backdrop-blur-xl shadow-xl select-none"
+          className="cursor-pointer transition-all duration-300 transform hover:scale-110 inline-flex min-w-[110px] min-h-[32px] items-center gap-2 px-3 py-1.5 rounded-full border bg-void-black/90 backdrop-blur-xl shadow-xl select-none"
           style={{
             borderColor: isHovered ? parentHub.colorHex : `${parentHub.colorHex}77`,
             boxShadow: isHovered
@@ -1027,7 +1029,59 @@ function SolarScene({
 }
 
 // ---------------------------------------------------------------------------
-// 5. Exported PlanetarySolarSystem Component
+// ---------------------------------------------------------------------------
+// 5. 360° Orbital Tour Camera Orchestrator
+// ---------------------------------------------------------------------------
+
+function TourCameraOrchestrator({
+  isTourActive,
+}: {
+  isTourActive: boolean;
+}) {
+  const storeApi = usePortfolioStoreApi();
+  const thetaRef = useRef(0);
+  const lastProjectAnnounced = useRef<string | null>(null);
+
+  useFrame((state, delta) => {
+    if (isTourActive) {
+      // 30 seconds per full 360° orbital revolution
+      thetaRef.current += (delta * (Math.PI * 2)) / 30;
+      if (thetaRef.current >= Math.PI * 2) {
+        thetaRef.current -= Math.PI * 2;
+      }
+
+      const R = 21;
+      const targetX = R * Math.sin(thetaRef.current);
+      const targetY = 5.0 + 1.4 * Math.cos(thetaRef.current * 2);
+      const targetZ = R * Math.cos(thetaRef.current);
+
+      state.camera.position.lerp(new THREE.Vector3(targetX, targetY, targetZ), Math.min(1.0, 4.5 * delta));
+      state.camera.lookAt(0, 0, 0);
+
+      // Announce premier projects sequentially across the four orbital quadrants
+      const quad = Math.floor(((thetaRef.current % (Math.PI * 2)) / (Math.PI * 2)) * 4);
+      const premierProjects = ["shadowos", "local-llm", "projectparrot", "zerotrust"];
+      const activeProjId = premierProjects[quad];
+
+      if (activeProjId && activeProjId !== lastProjectAnnounced.current) {
+        lastProjectAnnounced.current = activeProjId;
+        const proj = ALL_PROJECTS.find((p) => p.id === activeProjId);
+        if (proj) {
+          storeApi.getState().setActiveTourProject(proj);
+          storeApi.getState().setSelectedProjectId(proj.id);
+        }
+      }
+    } else {
+      thetaRef.current = 0;
+      lastProjectAnnounced.current = null;
+    }
+  });
+
+  return null;
+}
+
+// ---------------------------------------------------------------------------
+// 6. Exported PlanetarySolarSystem Component
 // ---------------------------------------------------------------------------
 
 export interface PlanetarySolarSystemProps {
@@ -1042,13 +1096,77 @@ export function PlanetarySolarSystem({
   const [hoveredHubId, setHoveredHubId] = React.useState<string | null>(null);
   const [hoveredProjectId, setHoveredProjectId] = React.useState<string | null>(null);
 
+  const isSolarTourActive = usePortfolioStore((s) => s.isSolarTourActive);
+  const stopSolarTour = usePortfolioStore((s) => s.stopSolarTour);
+  const activeTourProject = usePortfolioStore((s) => s.activeTourProject);
+  const isMinigameOpen = usePortfolioStore((s) => s.isMinigameOpen);
+
+  const tourStartTimeRef = useRef(0);
+  const controlsRef = useRef<any>(null);
+
+  React.useEffect(() => {
+    if (isSolarTourActive) {
+      tourStartTimeRef.current = performance.now();
+    }
+  }, [isSolarTourActive]);
+
+  // Safeguard 3: Trackpad wheel grace period on tour start (~800ms)
+  const handleWheel = () => {
+    if (isSolarTourActive && performance.now() - tourStartTimeRef.current > 800) {
+      stopSolarTour();
+    }
+  };
+
+  const handlePointerDown = () => {
+    if (isSolarTourActive) {
+      stopSolarTour();
+    }
+  };
+
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (isSolarTourActive && e.key === "Escape") {
+        stopSolarTour();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isSolarTourActive, stopSolarTour]);
+
   return (
-    <div className="w-full h-full relative cursor-grab active:cursor-grabbing">
+    <div
+      onWheel={handleWheel}
+      onPointerDown={handlePointerDown}
+      className="w-full h-full relative cursor-grab active:cursor-grabbing"
+    >
+      {/* 360 Tour Active HUD Indicator */}
+      {isSolarTourActive && (
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-30 flex items-center gap-3 px-4 py-2 rounded-2xl border border-starlight-gold/60 bg-void-card/90 shadow-[0_0_25px_rgba(251,191,36,0.4)] backdrop-blur-xl animate-fade-in pointer-events-auto">
+          <span className="w-2.5 h-2.5 rounded-full bg-starlight-gold animate-ping" />
+          <span className="font-mono text-xs font-black uppercase tracking-widest text-starlight-gold">
+            360° CELESTIAL ORBIT IN PROGRESS
+            {activeTourProject ? ` // PASSING: ${activeTourProject.name}` : ""}
+          </span>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              stopSolarTour();
+            }}
+            className="font-mono text-xs px-2.5 py-1 rounded-lg border border-white/20 bg-white/10 text-slate-300 hover:text-white hover:border-rose-400 hover:bg-rose-500/20 transition-all cursor-pointer"
+          >
+            [ EXIT TOUR ✕ ]
+          </button>
+        </div>
+      )}
+
       <Canvas
+        frameloop={isMinigameOpen ? "never" : "always"}
         camera={{ position: [0, 4.8, 20], fov: 46 }}
         gl={{ antialias: true, alpha: true }}
       >
         <OrbitControls
+          ref={controlsRef}
+          enabled={!isSolarTourActive}
           enablePan={false}
           enableRotate={true}
           enableZoom={true}
@@ -1058,6 +1176,7 @@ export function PlanetarySolarSystem({
           maxPolarAngle={Math.PI * 0.95}
           dampingFactor={0.06}
         />
+        <TourCameraOrchestrator isTourActive={isSolarTourActive} />
         <SolarScene
           speedMultiplier={speedMultiplier}
           hoveredHubId={hoveredHubId}

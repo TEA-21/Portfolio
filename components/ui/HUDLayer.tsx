@@ -12,10 +12,11 @@ import { CyberCursor } from "./CyberCursor";
 import { CRTOverlay } from "./CRTOverlay";
 import { FlyingMascotCompanion } from "./FlyingMascotCompanion";
 import { MascotChat } from "./MascotChat";
+import { SpaceArcadeMinigame } from "./SpaceArcadeMinigame";
 
 export function HUDLayer() {
   return (
-    <div className="fixed inset-0 w-full h-full z-[99998] pointer-events-none overflow-hidden">
+    <>
       {/* Animated CRT Scanlines & Vignetting */}
       <CRTOverlay />
 
@@ -25,8 +26,11 @@ export function HUDLayer() {
       {/* ARIA AI Chat Terminal (Triggered via Mascot HUD or hotkey) */}
       <MascotChat />
 
+      {/* Retro Cyberpunk Space Arcade Mini-Game Overlay */}
+      <SpaceArcadeMinigame />
+
       {/* Custom Starlight Magnetic Cursor & Trail (Topmost) */}
       <CyberCursor />
-    </div>
+    </>
   );
 }

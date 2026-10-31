@@ -19,6 +19,8 @@ export type {
 export {
   DEFAULT_PORTFOLIO_STATE,
   createPortfolioStore,
+  SPEED_RUN_PROJECTS,
+  SPEED_RUN_ONELINERS,
 } from "./portfolio-store";
 
 // Provider and hook (Client Components only — contains 'use client')
@@ -26,4 +28,5 @@ export type { PortfolioStoreProviderProps } from "./portfolio-store-provider";
 export {
   PortfolioStoreProvider,
   usePortfolioStore,
+  usePortfolioStoreApi,
 } from "./portfolio-store-provider";

@@ -21,10 +21,11 @@
  *    and top control panel with orbital speed controls ([ PAUSE ], [ 1x SPEED ], [ 2x SPEED ]).
  */
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import dynamic from "next/dynamic";
 import { DYNAMIC_CATEGORIES, ALL_PROJECTS, type Project } from "@/lib/projects";
 import { playHoverSound, playSelectSound, playTransitionSound } from "@/lib/audio";
+import { usePortfolioStore } from "@/lib/store";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
@@ -54,7 +55,14 @@ const PlanetarySolarSystem = dynamic(
 );
 
 export function ProjectWebGraph() {
-  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+  const selectedProjectId = usePortfolioStore((s) => s.selectedProjectId);
+  const setSelectedProjectId = usePortfolioStore((s) => s.setSelectedProjectId);
+  const isSolarTourActive = usePortfolioStore((s) => s.isSolarTourActive);
+  const isSpeedRunActive = usePortfolioStore((s) => s.isSpeedRunActive);
+  const speedRunStepIndex = usePortfolioStore((s) => s.speedRunStepIndex);
+  const speedRunProjects = usePortfolioStore((s) => s.speedRunProjects);
+  const nextSpeedRunStep = usePortfolioStore((s) => s.nextSpeedRunStep);
+  const endSpeedRunTour = usePortfolioStore((s) => s.endSpeedRunTour);
   const [speedMultiplier, setSpeedMultiplier] = useState<number>(1);
 
   const selectedProject = useMemo(() => {
@@ -62,18 +70,25 @@ export function ProjectWebGraph() {
     return ALL_PROJECTS.find((p) => p.id === selectedProjectId) || null;
   }, [selectedProjectId]);
 
+  const handleCloseModal = useCallback(() => {
+    playSelectSound();
+    setSelectedProjectId(null);
+    if (isSpeedRunActive) {
+      endSpeedRunTour();
+    }
+  }, [isSpeedRunActive, setSelectedProjectId, endSpeedRunTour]);
+
   // Global Escape key listener to dismiss the modal
   useEffect(() => {
     if (!selectedProjectId) return;
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
-        playSelectSound();
-        setSelectedProjectId(null);
+        handleCloseModal();
       }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [selectedProjectId]);
+  }, [selectedProjectId, handleCloseModal]);
 
   return (
     <section
@@ -100,19 +115,8 @@ export function ProjectWebGraph() {
           </div>
         </div>
 
-        {/* ── Footer Legend & Speed Control ── */}
-        <div className="flex flex-wrap items-center justify-between gap-4 font-mono text-xs text-slate-300 border-t border-white/10 pt-4 px-2">
-          <div className="flex flex-wrap items-center gap-4">
-            <span className="text-emerald-400 flex items-center gap-1.5 font-semibold">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              12 REPOSITORIES REVOLVING
-            </span>
-            <span className="text-slate-600">✦</span>
-            <span className="text-nebula-lavender font-semibold">5 TOPIC STARS</span>
-            <span className="text-slate-600">✦</span>
-            <span className="text-starlight-gold font-semibold">CENTRAL SUPERNOVA CORE</span>
-          </div>
-
+        {/* ── Speed Control ── */}
+        <div className="flex flex-wrap items-center justify-end gap-4 font-mono text-xs text-slate-300 border-t border-white/10 pt-4 px-2">
           {/* Discreet Speed Controls */}
           <div className="flex items-center gap-1 bg-void-black/60 p-1 rounded-xl border border-white/10 backdrop-blur-md">
             <button
@@ -169,12 +173,12 @@ export function ProjectWebGraph() {
           className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-void-black/40 backdrop-blur-[2px] transition-all duration-300 animate-in fade-in"
           onClick={(e) => {
             if (e.target === e.currentTarget) {
-              playSelectSound();
-              setSelectedProjectId(null);
+              handleCloseModal();
             }
           }}
         >
           <div
+            id="project-detail-modal-panel"
             className="relative w-full max-w-xl rounded-2xl p-7 shadow-2xl flex flex-col gap-6 animate-in fade-in zoom-in-95 duration-200 border border-nebula-violet/30 bg-[#090d1d]/80 backdrop-blur-2xl shadow-[0_0_50px_rgba(139,92,246,0.25),inset_0_1px_1px_rgba(255,255,255,0.15)]"
             onClick={(e) => e.stopPropagation()}
           >
@@ -196,8 +200,7 @@ export function ProjectWebGraph() {
               <button
                 type="button"
                 onClick={() => {
-                  playSelectSound();
-                  setSelectedProjectId(null);
+                  handleCloseModal();
                 }}
                 className="interactive group flex items-center gap-1.5 font-mono text-xs font-bold px-3.5 py-1.5 rounded-xl border border-white/20 bg-white/10 text-white hover:bg-rose-500/20 hover:border-rose-400/60 hover:text-rose-200 hover:shadow-[0_0_15px_rgba(244,63,94,0.35)] transition-all cursor-pointer"
                 aria-label="Close modal"
@@ -291,6 +294,54 @@ export function ProjectWebGraph() {
                 </a>
               </div>
             </div>
+
+            {/* ── Dedicated Speed Run Tour Navigation Bar ── */}
+            {isSpeedRunActive && (
+              <div className="flex items-center justify-between border-t border-cyan-400/30 pt-3 mt-1 bg-void-black/70 -mx-7 -mb-7 p-4 px-7 rounded-b-2xl">
+                <span className="font-mono text-xs font-bold text-starlight-gold flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
+                  [ TOUR STEP {speedRunStepIndex + 1} OF {speedRunProjects.length} ]
+                </span>
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      handleCloseModal();
+                    }}
+                    className="font-mono text-xs font-semibold px-3 py-1.5 rounded-xl border border-white/20 text-slate-300 hover:text-white hover:border-white/40 transition-all cursor-pointer"
+                  >
+                    [ END TOUR ✕ ]
+                  </button>
+                  {speedRunStepIndex < speedRunProjects.length - 1 ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        playSelectSound();
+                        playTransitionSound();
+                        nextSpeedRunStep();
+                      }}
+                      className="font-mono text-xs font-bold px-4 py-1.5 rounded-xl border border-cyan-400/60 bg-cyan-500/20 text-cyan-200 hover:bg-cyan-500/35 hover:shadow-[0_0_15px_rgba(56,189,248,0.4)] transition-all cursor-pointer"
+                    >
+                      [ NEXT PROJECT ➔ ]
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        playSelectSound();
+                        playTransitionSound();
+                        setSelectedProjectId(null);
+                        endSpeedRunTour();
+                        window.dispatchEvent(new CustomEvent("tour-finished"));
+                      }}
+                      className="font-mono text-xs font-bold px-4 py-1.5 rounded-xl border border-starlight-gold/60 bg-starlight-gold/20 text-starlight-gold hover:bg-starlight-gold/35 hover:shadow-[0_0_20px_rgba(251,191,36,0.45)] transition-all cursor-pointer animate-pulse"
+                    >
+                      [ FINISH TOUR ★ ]
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}

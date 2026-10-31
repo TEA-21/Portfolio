@@ -116,3 +116,19 @@ export function usePortfolioStore<T>(
 
   return useStore(store, selector);
 }
+
+/**
+ * Access the underlying vanilla store instance (with .getState(), .setState()).
+ * Ideal for requestAnimationFrame loops or callbacks that must avoid stale closures.
+ */
+export function usePortfolioStoreApi(): PortfolioStoreApi {
+  const store = useContext(PortfolioStoreContext);
+
+  if (store === null) {
+    throw new Error(
+      "[PortfolioStore] `usePortfolioStoreApi` must be used inside a <PortfolioStoreProvider>."
+    );
+  }
+
+  return store;
+}

@@ -10,7 +10,6 @@
  */
 
 import Image from "next/image";
-import { MascotCompanion } from "./MascotCompanion";
 
 export function BioDetails() {
   return (
@@ -30,12 +29,12 @@ export function BioDetails() {
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-nebula-violet" />
               </span>
               <span className="font-mono text-xs uppercase tracking-[0.25em] text-nebula-lavender drop-shadow-[0_2px_6px_rgba(0,0,0,0.9)]">
-                [ ASTRONOMICAL DOSSIER // BIOGRAPHY ]
+                [ DOSSIER ]
               </span>
             </div>
 
             <h2 className="font-mono text-3xl sm:text-4xl font-bold tracking-tight text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.95)]">
-              // RESEARCH FRONTIERS & MISSION
+              // ABOUT ME
             </h2>
 
             <div className="flex flex-col gap-4 font-sans text-sm sm:text-base leading-relaxed text-slate-100 drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]">
@@ -45,11 +44,6 @@ export function BioDetails() {
               <p>
                 From engineering decentralized identity protocols using Zero-Knowledge Proofs to quantizing and deploying micro-SLMs on ESP32 microcontrollers, I treat complex bottlenecks in security and machine learning like high-stakes boss fights. When I'm not orchestrating multi-agent pipelines, I'm grinding out trophies in the Clash Royale arena, clutching rounds in Valorant, or managing my private Minecraft server infrastructure. I build tools for automation, resilience, and maximum performance.
               </p>
-            </div>
-
-            {/* Floating Levitating NPC Companion Avatar */}
-            <div className="pt-1">
-              <MascotCompanion />
             </div>
 
             {/* Celestial Telemetry Badges */}

@@ -1,54 +1,41 @@
 # Project Graph & Portfolio Redesign Progress
 
-# Project Graph & Portfolio Redesign Progress
-
 ## Current Active Phase
-Phase 9: Interactive Flying 16-Bit Pixel-Art Astronaut Companion (Complete & Verified)
+Phase 32: 100+ Mega Dialogue Pool, 1:1 Attached Follow Bubble & Long Ambient Breaks (Complete & Verified)
 
 ## Completed Steps & Exact Techniques/Libraries Used
-- **16-Bit Retro Pixel-Art Astronaut Sprite Engine (`PixelAstronaut.tsx`)**:
-  - Engineered a 24x24 pixel astronaut character using consolidated `<path>` elements with `shape-rendering="crispEdges"`.
-  - Kept DOM node count to strictly 12 elements (< 25 max) for lightweight 60 FPS rendering alongside WebGL2 / Three.js.
-  - Implemented multi-pose animation states: `idle` (visor glint), `thrust` (dual jetpack flames), `drag` (puffed limbs), `spin` (360° flip), `wave` (animated greeting), and `transmitting` (pulsing antenna beacon).
-- **Zero-Re-Render Physics Engine & Viewport Floater (`FlyingMascotCompanion.tsx`)**:
-  - Kinematic state `(x, y, vx, vy)` and particle arrays stored strictly in `useRef`.
-  - Frame-rate independent velocity damping via `Math.pow(0.965, dt * 60)` with delta-time clamped to `Math.min(dt, 0.032)`.
-  - Direct DOM updates via `translate3d(x, y, 0) rotate(tilt)` with boundary elastic rebounds and resize clamping.
-  - SSR-safe initialization with default safe coordinates before client `useEffect` positioning.
-  - Touch/pointer drag handling with `< 6px` movement threshold distinguishing clicks vs. zero-G flings.
-  - Edge-aware radial HUD and contextual speech bubble adjusting orientation inward toward screen center.
-  - Stardust Hunt mini-game spawning 5 celestial stardust gems with real-time collision detection.
-- **Debounced IntersectionObserver for Section Tips**:
-  - Observes `#hero-section`, `#bio-details-section`, and `#interactive-project-web` with `threshold: 0.4` and an 800ms dwell debounce.
-- **Web Audio API 8-Bit Synthesizers & Global Mute (`lib/audio.ts`)**:
-  - Implemented synthesized chiptune sounds: `playRetroThrusterSound` (filtered white noise), `playRetroJumpSound` (swept square wave), `playRetroBounceSound` (85Hz damped triangle), `playRetroCoinSound` (B5->E6 arpeggio), `playRetroSomersaultSound`, and `playRetroMenuSound`.
-  - Cooldown throttling (120ms) prevents wall-corner audio distortion.
-  - Global mute flag togglable from HUD.
-- **OpenRouter Fast Free Model Router Resilience (`route.ts` & `MascotChat.tsx`)**:
-  - Fast instruct models: `meta-llama/llama-3.3-70b-instruct:free`, `mistralai/mistral-small-3.1-24b-instruct:free`, `qwen/qwen-2.5-72b-instruct:free`.
-  - Graceful in-character fallback response on `429` rate limits or `5xx` errors.
-  - Added `onError` hook in `MascotChat.tsx` to handle mid-stream drops without raw error toasts.
-  - Connected `mascot-transmitting` event so the flying astronaut signals during AI query latency.
-- **HUD Non-Blocking Pointer Events (`HUDLayer.tsx`)**:
-  - Fixed full-screen layer retains `pointer-events-none`. `pointer-events-auto` applied strictly to astronaut hitbox, menu buttons, and collectible gems.
-- **Verification**:
-  - Full TypeScript type-check passed (`npx tsc --noEmit` exited with code 0).
-  - Next.js production build passed (`npm run build` exited with code 0).
+- **100+ Mega Dialogue Pool Expansion (`lib/mascot-dialogues.ts`)**:
+  - Expanded dialogue deck to 106 unique entries across 7 categories:
+    - `ai_agentic` (16 entries): Multi-agent debate swarms, MCP tools, token context caching, schema grounding, RL simulation, speculative decoding, FlashAttention-3, hybrid BM25/vector RAG, MoE layer routing, Chain-of-Thought scratchpads, AWQ quantization, DPO preference tuning, prompt injection defenses, RoPE positional angles.
+    - `systems_security` (16 entries): MicroVM isolation, Zero-standing IAM leasing, NVMe MoE direct streaming, bare-metal ESP32 SLMs, ZKP passkeys, eBPF kernel tracing, cache line false sharing, Raft consensus, AVX-512 SIMD, memory barriers, Linux cgroups v2/namespaces, Rowhammer DRAM crosstalk, Copy-On-Write paging, TCP BBR, ASLR memory randomization, zero-copy `sendfile()`.
+    - `astrophysics_science` (16 entries): Hawking radiation, quantum entanglement bounds, CMB 2.725K Big Bang echo, gravitational time dilation, black hole event horizon tidal gentleness, dark energy acceleration, quantum eraser delayed-choice, neutron star density, LIGO proton-fraction laser arms, cosmic horizon recession, JWST L2 Lagrange orbit, frame-dragging Lense-Thirring effect, Heisenberg Fourier transforms, pulsars, thermodynamic entropy arrow of time, quantum tunneling.
+    - `gaming_lore` (16 entries): Quake bunny hopping vector projection, Mario 64 BLJ, Minecraft 32-bit floating-point Far Lands, Geometry Dash 240Hz ticks, DOOM 1993 BSP trees, Half-Life 2 Accelerated Back Hopping, Zelda OoT RAM ACE exploits, Celeste 5 coyote frames, Street Fighter II combo bug, GoldenEye audio spheres, Portal 9-depth recursion, Space Invaders CPU load, Melee wavedashing, Pac-Man ghost personalities, Skyrim intro cart helmet NPC, WoW Corrupted Blood plague.
+    - `math_computing_history` (16 entries): Quake III `0x5f3759df` fast inverse square root, Collatz conjecture (3n+1), Gödel's Incompleteness, Apollo 11 hand-woven core rope memory, P vs NP $1M prize, Claude Shannon boolean relays, Alan Turing Entscheidungsproblem, Euler's identity e^(iπ)+1=0, Grace Hopper's 1947 moth bug, RSA prime factorization, Banach-Tarski paradox, Ada Lovelace Bernoulli numbers, Shannon Entropy data compression, Halting Problem, Birthday paradox, Mandelbrot fractals.
+    - `retro_scifi_lore` (12 entries): HAL 9000 mission conflict, Hitchhiker's Guide 42, Neuromancer consensual cyberspace, Interstellar Gargantua GR ray tracing, Blade Runner tears in rain, Asimov's Three Laws paradoxes, Stanislaw Lem Solaris cosmos boundaries, 2001 monolith 1:4:9 integer proportions, Dune Butlerian Jihad, Matrix sushi recipe digital rain, Contact prime number transmission, tachyon imaginary coordinates.
+    - `cadet_quips` (14 entries): Zero-G espresso disasters, bit-flips in thrusters, inspecting CSS DOM nodes, cursor teasing, cyber-plasma caffeine, orbital summon tether, project graph constellations, Speed Run tour promo, 60 FPS visor, physics fling stress test, CRT phosphor scanlines, orbital cursor tracking, WebGL shader health, cadet navigation wings.
+  - Non-repeating `DialogueShuffleBag` (Fisher-Yates) ensures zero repeats across the entire 106-dialogue cycle.
+- **1:1 Parent-Attached Speech Bubble Kinematics (`components/ui/MascotSpeechBubble.tsx`)**:
+  - Moved `MascotSpeechBubble` directly inside `div ref={astronautRef}` (outside rotating `spriteWrapperRef`).
+  - Stays 100% attached to ARIA with 0 frame latency: tracks zero-G sinusoidal hover waves and dragging identically (`constantAttachment: true`).
+  - Viewport-clamped positioning prevents horizontal overflow off screen borders with dynamic cartoon tail alignment.
+- **Slow Ambient Mascot & Break-Only Speech Timing (`components/ui/FlyingMascotCompanion.tsx`)**:
+  - All breaks lengthened to **$8\text{s} - 20\text{s}$** (`roam.restDuration = 8.0 + Math.random() * 12.0`).
+  - Speech bubbles **only appear during resting breaks**.
+  - Break duration guarantees the full dialogue duration ($8\text{s} - 12\text{s}$) so ARIA hovers calmly while chatting.
+  - Speech bubbles auto-hide when ARIA launches into a flight, or when dragged/summoned.
+- **In-Browser Verification via Chrome DevTools MCP**:
+  - TypeScript: 0 errors (`npx tsc --noEmit`).
+  - Next.js Production Build: Compiled cleanly with 0 errors (`npm run build`).
+  - Live Browser Testing (`http://localhost:3000/`):
+    - Verified `insideMascot: true` with locked 1:1 delta Y tracking during hover.
+    - Verified diverse categories delivered from 106 pool (Solaris, Copy-On-Write, Apollo 11 rope memory, Frame-dragging).
+    - Verified instant click-to-cycle and break-only speech triggering.
 
 ## Files Created or Modified
-- `d:/Projects/Portfolio/components/ui/PixelAstronaut.tsx` (NEW: 16-bit SVG pixel astronaut sprite engine)
-- `d:/Projects/Portfolio/components/ui/FlyingMascotCompanion.tsx` (NEW: Flying mascot companion with zero-re-render physics)
-- `d:/Projects/Portfolio/lib/audio.ts` (MODIFIED: Added 8-bit chiptune synthesizers, throttling, and global mute state)
-- `d:/Projects/Portfolio/app/api/chat/route.ts` (MODIFIED: Fast free instruct models, 429/5xx in-character fallbacks)
-- `d:/Projects/Portfolio/components/ui/MascotChat.tsx` (MODIFIED: onError fallback, open event listener, transmitting emitter)
-- `d:/Projects/Portfolio/components/ui/HUDLayer.tsx` (MODIFIED: Mounted FlyingMascotCompanion and MascotChat)
-- `d:/Projects/Portfolio/components/ui/AboutMeHero.tsx` (MODIFIED: Added `id="hero-section"`)
-- `d:/Projects/Portfolio/components/ui/BioDetails.tsx` (MODIFIED: Added `id="bio-details-section"`)
-- `d:/Projects/Portfolio/components/ui/MascotCompanion.tsx` (MODIFIED: Added summon dispatch to fly mascot to bio)
-- `d:/Projects/Portfolio/PROGRESS.md` (MODIFIED: Recorded Phase 9 completion)
+- `d:/Projects/Portfolio/lib/mascot-dialogues.ts` (MODIFIED: Expanded from 24 to 106 dialogues across 7 categories)
+- `d:/Projects/Portfolio/components/ui/MascotSpeechBubble.tsx` (MODIFIED: Refactored for direct parent attachment inside astronautRef with edge clamping)
+- `d:/Projects/Portfolio/components/ui/FlyingMascotCompanion.tsx` (MODIFIED: Direct parent bubble nesting, break-only speech scheduler, 8s–20s ambient breaks)
+- `d:/Projects/Portfolio/PROGRESS.md` (MODIFIED: Documented Phase 32 completion)
 
 ## Next Immediate Action
-All features implemented, tested, and verified against Next.js production build. Ready for user exploration.
-
-
-
+All features verified live in production build on `http://localhost:3000/`.
