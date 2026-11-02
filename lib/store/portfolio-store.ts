@@ -73,6 +73,9 @@ export interface PortfolioState {
   // --- Orbital Minigame ---
   isMinigameOpen: boolean;
 
+  // --- Fly-Through Cutscene ---
+  isFlythroughActive: boolean;
+
   // --- Audio State ---
   isAudioMuted: boolean;
 }
@@ -117,6 +120,9 @@ export interface PortfolioActions {
 
   // Minigame actions
   setMinigameOpen: (isOpen: boolean) => void;
+
+  // Fly-through cutscene actions
+  setFlythroughActive: (active: boolean) => void;
 
   // Audio actions
   toggleAudioMuted: () => boolean;
@@ -189,6 +195,7 @@ export const DEFAULT_PORTFOLIO_STATE: PortfolioState = {
   isSolarTourActive: false,
   activeTourProject: null,
   isMinigameOpen: false,
+  isFlythroughActive: false,
   isAudioMuted: typeof window !== "undefined" ? localStorage.getItem("portfolio_audio_muted") === "true" : false,
 };
 
@@ -340,6 +347,11 @@ export function createPortfolioStore(
     // Minigame actions
     // -----------------------------------------------------------------------
     setMinigameOpen: (isOpen) => set({ isMinigameOpen: isOpen, isSolarTourActive: isOpen ? false : undefined }),
+
+    // -----------------------------------------------------------------------
+    // Fly-through cutscene actions
+    // -----------------------------------------------------------------------
+    setFlythroughActive: (active) => set({ isFlythroughActive: active }),
 
     // -----------------------------------------------------------------------
     // Audio actions

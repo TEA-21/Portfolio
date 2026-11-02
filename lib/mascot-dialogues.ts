@@ -755,7 +755,7 @@ export const MASCOT_DIALOGUES: DialogueItem[] = [
     category: "cadet_quips",
     categoryLabel: "CADET LOG",
     badgeColor: "#fbbf24",
-    text: "If you click me, you can start the Speed Run tour. I fly ahead and review Taanush's best projects!",
+    text: "Open my MENU button to start the Speed Run tour. I fly ahead and review Taanush's best projects!",
   },
   {
     id: "quip_9",
@@ -798,6 +798,27 @@ export const MASCOT_DIALOGUES: DialogueItem[] = [
     categoryLabel: "CADET LOG",
     badgeColor: "#fbbf24",
     text: "Every time a developer writes a clean unit test, an astronaut cadet gets their spatial navigation wings!",
+  },
+  {
+    id: "cadet_minigame_invite_1",
+    category: "cadet_quips",
+    categoryLabel: "CADET LOG",
+    badgeColor: "#fbbf24",
+    text: "Cadet! Have you tested your reflexes in our retro arcade minigame yet? Launch it from my command menu!",
+  },
+  {
+    id: "cadet_minigame_invite_2",
+    category: "cadet_quips",
+    categoryLabel: "CADET LOG",
+    badgeColor: "#fbbf24",
+    text: "Reflex training simulator online! Give our retro arcade minigame a spin—no pressure, cadet!",
+  },
+  {
+    id: "cadet_minigame_invite_3",
+    category: "cadet_quips",
+    categoryLabel: "CADET LOG",
+    badgeColor: "#fbbf24",
+    text: "Sensors detect spare cycles! Jump into the arcade minigame and see what score you can put up.",
   },
 ];
 
@@ -845,3 +866,70 @@ export class DialogueShuffleBag {
     return this.pool.length;
   }
 }
+
+// ══════════════════════════════════════════════════════════════════════════
+// PHASE 35: PLAYFUL & INTERACTIVE MASCOT SUITE REACTIONS
+// ══════════════════════════════════════════════════════════════════════════
+
+export const SKILL_REACTIONS: Record<string, string[]> = {
+  python: [
+    "Python telemetry locked! Ready for PyTorch tensor pipelines?",
+    "Ah, Python! Dynamic typing, maximum AI prototyping velocity.",
+  ],
+  "deep learning": [
+    "Backprop gradients converging smoothly!",
+    "Multi-head attention matrices active. Transformers at full throttle.",
+  ],
+  nlp: [
+    "Token embedding space calibrated! Vector distances looking crisp.",
+    "Sub-word tokenization and positional encodings nominal.",
+  ],
+  "scalable ml": [
+    "High-throughput batching active! Distributed workers synchronized.",
+    "Zero latency bottlenecks detected in this inference cluster.",
+  ],
+  "agentic ai": [
+    "Autonomous agent loop engaged! Tool schemas and scratchpads grounded.",
+    "Multi-agent debate swarm consensus reached. Proceeding!",
+  ],
+  microvm: [
+    "ShadowOS kernel boot sequence nominal! MicroVM sandboxing secure.",
+    "Sub-millisecond cold starts and isolated guest memory locked.",
+  ],
+  zk: [
+    "Zero-Knowledge proof generated! Verification verified without leaking secrets.",
+    "Elliptic curve pairings and cryptographic zk-SNARKs nominal.",
+  ],
+  esp32: [
+    "Bare-metal micro-controller online! Quantized 4-bit SLM running on micro-watts.",
+    "ESP32 firmware optimized. Edge inference running on copper.",
+  ],
+};
+
+export const POKE_REACTIONS: string[] = [
+  "Eep! Zero-G tickles!",
+  "Diagnostics nominal! Don't poke the reactor core!",
+  "Cadet ARIA, reporting for duty! ✦",
+  "Whoa, careful with the thruster controls!",
+  "Reactor core ticklishness level: 100%!",
+];
+
+export const PROJECT_CHEER_REACTIONS: string[] = [
+  "Telemetry locked on this project node! Outstanding architecture.",
+  "Fascinating build! High production throughput confirmed.",
+  "Deep space data analysis: 10/10 technical execution!",
+];
+
+export const SECTION_REACTIONS: Record<string, string> = {
+  dossier: "Chief Architect dossier opened. Security clearance: LEVEL 5.",
+  projects: "Entering Galactic Supernova Project Core! Choose an orbit to inspect.",
+  skills: "Core specializations online. Neural weights & system kernels nominal.",
+};
+
+export const MINIGAME_INVITES: string[] = [
+  "Cadet! Have you tested your reflexes in our retro arcade minigame yet? Launch it from my command menu!",
+  "Reflex training simulator online! Give our retro arcade minigame a spin—no pressure, cadet!",
+  "Sensors detect spare cycles! Jump into the arcade minigame and see what score you can put up.",
+];
+
+

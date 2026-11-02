@@ -35,7 +35,7 @@
  *   }
  */
 
-import { createContext, useContext, useRef, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useRef, type ReactNode } from "react";
 import { useStore } from "zustand";
 import {
   createPortfolioStore,
@@ -77,6 +77,12 @@ export function PortfolioStoreProvider({
   if (storeRef.current === null) {
     storeRef.current = createPortfolioStore(initialState);
   }
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      (window as any).__portfolioStore = storeRef.current;
+    }
+  }, []);
 
   return (
     <PortfolioStoreContext.Provider value={storeRef.current}>

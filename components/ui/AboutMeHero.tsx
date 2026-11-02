@@ -53,7 +53,7 @@ export function AboutMeHero() {
   return (
     <section
       id="hero-section"
-      className="relative flex min-h-screen w-full flex-col items-center justify-center px-4 sm:px-8 overflow-hidden bg-transparent"
+      className="relative flex min-h-screen w-full max-w-[100vw] flex-col items-center justify-center px-4 sm:px-8 overflow-hidden bg-transparent"
     >
       {/* ── Content Container (Clean, unobstructed WebGL view) ────── */}
       <div className="relative z-10 flex flex-col items-center text-center gap-7 max-w-4xl pt-8">
@@ -94,11 +94,16 @@ export function AboutMeHero() {
         </div>
 
         {/* Interactive Starlight Skill Constellation */}
-        <div className="flex flex-wrap justify-center gap-2.5 max-w-2xl">
+        <div
+          data-mascot-interest="skills"
+          className="flex flex-wrap justify-center gap-2.5 max-w-2xl"
+        >
           {SKILLS.map((skill) => (
             <div
               key={skill.name}
-              className="group relative inline-flex items-center gap-2 rounded-xl border border-white/10 bg-void-black/40 px-3.5 py-1.5 font-mono text-xs font-medium text-starlight-white backdrop-blur-[2px] shadow-[0_4px_16px_rgba(0,0,0,0.5)] transition-all duration-300 hover:border-nebula-violet/60 hover:bg-nebula-violet/25 hover:shadow-[0_0_20px_rgba(139,92,246,0.35)] hover:-translate-y-0.5 cursor-default"
+              data-mascot-interest="skill"
+              data-skill-name={skill.name.toLowerCase()}
+              className="skill-badge group relative inline-flex items-center gap-2 rounded-xl border border-white/10 bg-void-black/40 px-3.5 py-1.5 font-mono text-xs font-medium text-starlight-white backdrop-blur-[2px] shadow-[0_4px_16px_rgba(0,0,0,0.5)] transition-all duration-300 hover:border-nebula-violet/60 hover:bg-nebula-violet/25 hover:shadow-[0_0_20px_rgba(139,92,246,0.35)] hover:-translate-y-0.5 cursor-default"
             >
               <span className="text-starlight-gold/90 group-hover:scale-110 transition-transform">
                 {skill.symbol}

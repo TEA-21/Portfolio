@@ -22,7 +22,7 @@
  * 7. Modal Avoidance: Keeps mascot strictly outside `#project-detail-modal-panel`.
  */
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { PixelAstronaut, AstronautPose } from "./PixelAstronaut";
 import {
   usePortfolioStore,
@@ -36,10 +36,23 @@ import {
   playRetroCoinSound,
   playRetroMenuSound,
   playRetroSpeechBlip,
+  playWarpJumpSound,
+  playRickMortyPortalSound,
+  playComedicEjectSound,
+  playComedicRetchSound,
+  stopCutsceneAudio,
   ensureAudioResumed,
 } from "@/lib/audio";
 import { MascotSpeechBubble } from "./MascotSpeechBubble";
-import { DialogueShuffleBag, DialogueItem } from "@/lib/mascot-dialogues";
+import {
+  DialogueShuffleBag,
+  DialogueItem,
+  SKILL_REACTIONS,
+  POKE_REACTIONS,
+  PROJECT_CHEER_REACTIONS,
+  SECTION_REACTIONS,
+  MINIGAME_INVITES,
+} from "@/lib/mascot-dialogues";
 import { sampleFlightSwoop } from "./mascotFlightRoute";
 
 interface AcrobaticRoutine {
@@ -135,17 +148,82 @@ export function FlyingMascotCompanion() {
   };
 
   const [isHUDOpen, setIsHUDOpen] = useState(false);
+  const [isNearCursor, setIsNearCursor] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
+  const isNearCursorRef = useRef(false);
+  const isHUDOpenRef = useRef(isHUDOpen);
+  const lastMousePosRef = useRef<{ x: number; y: number } | null>(null);
+  const hudRef = useRef<HTMLDivElement>(null);
+  const menuBtnRef = useRef<HTMLButtonElement>(null);
+  const hasTriggeredMinigameInviteRef = useRef(false);
+
+  useEffect(() => {
+    isHUDOpenRef.current = isHUDOpen;
+  }, [isHUDOpen]);
 
   // Store bindings
   const storeApi = usePortfolioStoreApi();
   const startSolarTour = usePortfolioStore((s) => s.startSolarTour);
+  const isMinigameOpen = usePortfolioStore((s) => s.isMinigameOpen);
   const setMinigameOpen = usePortfolioStore((s) => s.setMinigameOpen);
+  const setFlythroughActive = usePortfolioStore((s) => s.setFlythroughActive);
+
+  // Phase 38 & 44: Cinematic Warp Cutscene Orchestration (Rick & Morty Portal Warp-In & Warp-Out)
+  type CutscenePhase =
+    | "none"
+    | "warp_in_loop"
+    | "warp_in_portal"
+    | "warp_out_portal"
+    | "warp_out_spew"
+    | "warp_out_puke"
+    | "warp_out_dizzy";
+
+  const [cutscenePhase, setCutscenePhase] = useState<CutscenePhase>("none");
+  const cutscenePhaseRef = useRef<CutscenePhase>("none");
+  const loopRafRef = useRef<number | null>(null);
+  const [cutsceneQuip, setCutsceneQuip] = useState<string | null>(null);
+  const [rickMortyPortalPos, setRickMortyPortalPos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const skipArmedRef = useRef(false);
+  const cutsceneTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const wasMinigameOpenRef = useRef(false);
   const isSpeedRunActive = usePortfolioStore((s) => s.isSpeedRunActive);
   const speedRunStepIndex = usePortfolioStore((s) => s.speedRunStepIndex);
   const speedRunProjects = usePortfolioStore((s) => s.speedRunProjects);
   const startSpeedRunTour = usePortfolioStore((s) => s.startSpeedRunTour);
   const endSpeedRunTour = usePortfolioStore((s) => s.endSpeedRunTour);
   const setSelectedProjectId = usePortfolioStore((s) => s.setSelectedProjectId);
+  const selectedProjectId = usePortfolioStore((s) => s.selectedProjectId);
+
+  // Expressive True Chibi Gaze & Interactive Engine State
+  const [cursorGaze, setCursorGaze] = useState<"center" | "left" | "right" | "up" | "down" | undefined>(undefined);
+  const cursorGazeRef = useRef<"center" | "left" | "right" | "up" | "down" | undefined>(undefined);
+  const lastActiveTimeRef = useRef(performance.now());
+  const pokeCountRef = useRef(0);
+  const lastPokeTimeRef = useRef(0);
+  const lastInspectTimeRef = useRef(0);
+  const lastSelectedProjRef = useRef<string | null>(null);
+
+  // Project Node Inspection Cheer Reaction
+  useEffect(() => {
+    if (selectedProjectId && selectedProjectId !== lastSelectedProjRef.current) {
+      lastSelectedProjRef.current = selectedProjectId;
+      if (!storeApi.getState().isSpeedRunActive) {
+        updatePose("cheer");
+        const cheerQuip = PROJECT_CHEER_REACTIONS[Math.floor(Math.random() * PROJECT_CHEER_REACTIONS.length)];
+        setTourSpeech(cheerQuip);
+        clearTourTimeouts();
+        const cheerTimer = setTimeout(() => {
+          if (poseRef.current === "cheer") updatePose("idle");
+        }, 1500);
+        const speechTimer = setTimeout(() => {
+          setTourSpeech(null);
+        }, 4500);
+        tourTimeoutRef.current.push(cheerTimer, speechTimer);
+      }
+    } else if (!selectedProjectId) {
+      lastSelectedProjRef.current = null;
+    }
+  }, [selectedProjectId, storeApi]);
 
   // Speed Run Tour state
   const tourRef = useRef<{
@@ -173,6 +251,38 @@ export function FlyingMascotCompanion() {
   // Edge awareness positioning
   const [isNearRight, setIsNearRight] = useState(true);
   const [isNearBottom, setIsNearBottom] = useState(true);
+  const [isNearTop, setIsNearTop] = useState(false);
+  const [isNearLeft, setIsNearLeft] = useState(false);
+  const isNearRightRef = useRef(true);
+  const isNearBottomRef = useRef(true);
+  const isNearTopRef = useRef(false);
+  const isNearLeftRef = useRef(false);
+
+  const updateEdgeAwareness = (x: number, y: number) => {
+    const vw = typeof window !== "undefined" ? window.innerWidth : 1200;
+    const vh = typeof window !== "undefined" ? window.innerHeight : 800;
+    const nearRight = x > vw / 2;
+    const nearBottom = y > vh / 2;
+    const nearTop = y < 160;
+    const nearLeft = x < 110;
+
+    if (isNearRightRef.current !== nearRight) {
+      isNearRightRef.current = nearRight;
+      setIsNearRight(nearRight);
+    }
+    if (isNearBottomRef.current !== nearBottom) {
+      isNearBottomRef.current = nearBottom;
+      setIsNearBottom(nearBottom);
+    }
+    if (isNearTopRef.current !== nearTop) {
+      isNearTopRef.current = nearTop;
+      setIsNearTop(nearTop);
+    }
+    if (isNearLeftRef.current !== nearLeft) {
+      isNearLeftRef.current = nearLeft;
+      setIsNearLeft(nearLeft);
+    }
+  };
 
   // ── Mascot Cartoon Speech Bubble Controller ─────────────────────────
   const shuffleBagRef = useRef<DialogueShuffleBag | null>(null);
@@ -237,6 +347,67 @@ export function FlyingMascotCompanion() {
     return () => {
       clearTimeout(initialTimer);
       if (speechDurationTimerRef.current) clearTimeout(speechDurationTimerRef.current);
+    };
+  }, [isReady]);
+
+  // ── 25-Second Proactive User Engagement Minigame Invite (Once per session) ──
+  useEffect(() => {
+    if (!isReady) return;
+
+    let retryTimer: NodeJS.Timeout | null = null;
+    const engagementTimer = setTimeout(() => {
+      const tryShowInvite = () => {
+        if (hasTriggeredMinigameInviteRef.current) return;
+        const state = storeApi.getState();
+        if (
+          isHUDOpenRef.current ||
+          state.isMinigameOpen ||
+          state.isSpeedRunActive ||
+          state.isSolarTourActive
+        ) {
+          // If HUD or minigame is currently active, retry after 4 seconds
+          retryTimer = setTimeout(tryShowInvite, 4000);
+          return;
+        }
+
+        hasTriggeredMinigameInviteRef.current = true;
+        const randomInvite =
+          MINIGAME_INVITES[Math.floor(Math.random() * MINIGAME_INVITES.length)];
+        const inviteItem: DialogueItem = {
+          id: "minigame_proactive_invite",
+          category: "cadet_quips",
+          categoryLabel: "MINIGAME RADAR",
+          badgeColor: "#fbbf24",
+          text: randomInvite,
+        };
+
+        setActiveDialogue(inviteItem);
+        setIsSpeechBubbleVisible(true);
+        lastSpeechTimeRef.current = performance.now();
+        playRetroSpeechBlip();
+        setIsMascotWiggling(true);
+        setTimeout(() => setIsMascotWiggling(false), 500);
+
+        const durationMs = Math.min(12000, Math.max(7000, randomInvite.length * 85));
+        roamRef.current.restDuration = Math.max(
+          roamRef.current.restDuration,
+          roamRef.current.restElapsed + durationMs / 1000 + 2.5
+        );
+
+        if (speechDurationTimerRef.current) clearTimeout(speechDurationTimerRef.current);
+        speechDurationTimerRef.current = setTimeout(() => {
+          if (!bubbleHoveredRef.current) {
+            setIsSpeechBubbleVisible(false);
+          }
+        }, durationMs);
+      };
+
+      tryShowInvite();
+    }, 25000);
+
+    return () => {
+      clearTimeout(engagementTimer);
+      if (retryTimer) clearTimeout(retryTimer);
     };
   }, [isReady]);
 
@@ -329,6 +500,7 @@ export function FlyingMascotCompanion() {
 
   // Timestamp for audio bounce cooldown (150ms debounce) (Refinement 3)
   const lastBounceTimeRef = useRef(0);
+  const bounceTimeRef = useRef(0);
 
   // Autonomous Roaming Kinematics state machine
   const roamRef = useRef<RoamKinematics>({
@@ -397,9 +569,9 @@ export function FlyingMascotCompanion() {
     setTimeout(triggerDialogueDuringBreak, 900);
   };
 
-  // Particle pool for jetpack exhaust
+  // Particle pool for jetpack exhaust & TotM retro square shards
   const particlesRef = useRef<
-    Array<{ x: number; y: number; vx: number; vy: number; life: number; color: string }>
+    Array<{ x: number; y: number; vx: number; vy: number; life: number; color: string; size?: number }>
   >([]);
 
   // -------------------------------------------------------------------------
@@ -409,8 +581,7 @@ export function FlyingMascotCompanion() {
     const defaultX = Math.max(20, window.innerWidth - 100);
     const defaultY = Math.max(20, window.innerHeight - 150);
     posRef.current = { x: defaultX, y: defaultY };
-    setIsNearRight(defaultX > window.innerWidth / 2);
-    setIsNearBottom(defaultY > window.innerHeight / 2);
+    updateEdgeAwareness(defaultX, defaultY);
     setIsReady(true);
     lastTimeRef.current = performance.now();
 
@@ -419,8 +590,7 @@ export function FlyingMascotCompanion() {
       const maxY = Math.max(20, window.innerHeight - 90);
       posRef.current.x = Math.min(Math.max(20, posRef.current.x), maxX);
       posRef.current.y = Math.min(Math.max(20, posRef.current.y), maxY);
-      setIsNearRight(posRef.current.x > window.innerWidth / 2);
-      setIsNearBottom(posRef.current.y > window.innerHeight / 2);
+      updateEdgeAwareness(posRef.current.x, posRef.current.y);
     };
 
     window.addEventListener("resize", handleResize);
@@ -470,10 +640,46 @@ export function FlyingMascotCompanion() {
     };
 
     const handleGlobalPointerMove = (e: PointerEvent) => {
+      const now = performance.now();
+      lastActiveTimeRef.current = now;
+      if (poseRef.current === "snooze") {
+        updatePose("idle");
+      }
+
+      // Proximity cursor gaze tracking (40px to 220px)
+      const mascotCenterX = posRef.current.x + 29;
+      const mascotCenterY = posRef.current.y + 29;
+      const dx = e.clientX - mascotCenterX;
+      const dy = e.clientY - mascotCenterY;
+      const dist = Math.hypot(dx, dy);
+
+      lastMousePosRef.current = { x: e.clientX, y: e.clientY };
+
+      // Proximity detection when cursor is within 120px of mascot position
+      const isNear = dist <= 120;
+      if (isNearCursorRef.current !== isNear) {
+        isNearCursorRef.current = isNear;
+        setIsNearCursor(isNear);
+      }
+
+      let nextGaze: "center" | "left" | "right" | "up" | "down" | undefined = undefined;
+      if (dist >= 40 && dist <= 220) {
+        if (Math.abs(dx) > Math.abs(dy)) {
+          nextGaze = dx < 0 ? "left" : "right";
+        } else {
+          nextGaze = dy < 0 ? "up" : "down";
+        }
+      }
+
+      if (cursorGazeRef.current !== nextGaze) {
+        cursorGazeRef.current = nextGaze;
+        setCursorGaze(nextGaze);
+      }
+
       if (!holdStateRef.current.active) return;
-      const dx = e.clientX - holdStateRef.current.startX;
-      const dy = e.clientY - holdStateRef.current.startY;
-      if (Math.hypot(dx, dy) > 8) {
+      const hdx = e.clientX - holdStateRef.current.startX;
+      const hdy = e.clientY - holdStateRef.current.startY;
+      if (Math.hypot(hdx, hdy) > 8) {
         // Drag detected: cancel summon hold
         holdStateRef.current.active = false;
         if (reticleRef.current) reticleRef.current.style.display = "none";
@@ -481,6 +687,7 @@ export function FlyingMascotCompanion() {
     };
 
     const handleGlobalPointerUp = () => {
+      lastActiveTimeRef.current = performance.now();
       if (holdStateRef.current.active) {
         // Released before 450ms: cancel summon hold
         holdStateRef.current.active = false;
@@ -488,18 +695,159 @@ export function FlyingMascotCompanion() {
       }
     };
 
+    const handleUserActivity = () => {
+      lastActiveTimeRef.current = performance.now();
+      if (poseRef.current === "snooze") {
+        updatePose("idle");
+      }
+    };
+
+    // Component Observer Engine (Skills, Dossier, Projects Hover Reactivity)
+    const handleComponentInspect = (e: MouseEvent) => {
+      const now = performance.now();
+      if (now - lastInspectTimeRef.current < 10000) return;
+      if (
+        isDraggingRef.current ||
+        isHUDOpen ||
+        storeApi.getState().isSpeedRunActive ||
+        storeApi.getState().isMinigameOpen ||
+        storeApi.getState().isSolarTourActive ||
+        acrobatRef.current.phase !== "none"
+      ) {
+        return;
+      }
+
+      const target = (e.target as HTMLElement)?.closest?.("[data-mascot-interest], .skill-badge") as HTMLElement | null;
+      if (!target) return;
+
+      const interestType = target.getAttribute("data-mascot-interest");
+      const skillName = target.getAttribute("data-skill-name") || target.innerText?.trim().toLowerCase();
+
+      let quip: string | null = null;
+
+      if (interestType === "dossier") {
+        quip = SECTION_REACTIONS.dossier;
+      } else if (interestType === "projects") {
+        quip = SECTION_REACTIONS.projects;
+      } else if (interestType === "skills") {
+        quip = SECTION_REACTIONS.skills;
+      } else if (skillName) {
+        const matchedKey = Object.keys(SKILL_REACTIONS).find((k) =>
+          skillName.includes(k) || k.includes(skillName)
+        );
+        if (matchedKey) {
+          const list = SKILL_REACTIONS[matchedKey];
+          quip = list[Math.floor(Math.random() * list.length)];
+        }
+      }
+
+      if (!quip) return;
+
+      lastInspectTimeRef.current = now;
+      lastActiveTimeRef.current = now;
+
+      // Mascot swoops nearby target element
+      const rect = target.getBoundingClientRect();
+      const targetMascotX = Math.max(20, Math.min(window.innerWidth - 80, rect.right + 15));
+      const targetMascotY = Math.max(20, Math.min(window.innerHeight - 80, rect.top - 15));
+
+      velRef.current = {
+        vx: Math.max(-12, Math.min(12, (targetMascotX - posRef.current.x) * 0.18)),
+        vy: Math.max(-12, Math.min(12, (targetMascotY - posRef.current.y) * 0.18)),
+      };
+
+      updatePose("scan");
+      setTourSpeech(quip);
+      clearTourTimeouts();
+
+      const tScan = setTimeout(() => {
+        if (poseRef.current === "scan") updatePose("idle");
+      }, 1800);
+
+      const tSpeech = setTimeout(() => {
+        setTourSpeech(null);
+      }, 5000);
+
+      tourTimeoutRef.current.push(tScan, tSpeech);
+    };
+
+    const handleCustomInspect = (e: Event) => {
+      const now = performance.now();
+      if (now - lastInspectTimeRef.current < 10000) return;
+      lastInspectTimeRef.current = now;
+      lastActiveTimeRef.current = now;
+
+      const detail = (e as CustomEvent)?.detail;
+      const quip = detail?.text || detail?.quip;
+      if (!quip) return;
+
+      updatePose("scan");
+      setTourSpeech(quip);
+      clearTourTimeouts();
+
+      const tScan = setTimeout(() => {
+        if (poseRef.current === "scan") updatePose("idle");
+      }, 1800);
+
+      const tSpeech = setTimeout(() => {
+        setTourSpeech(null);
+      }, 5000);
+
+      tourTimeoutRef.current.push(tScan, tSpeech);
+    };
+
+    const handleWindowPointerLeave = () => {
+      lastMousePosRef.current = null;
+      if (isNearCursorRef.current) {
+        isNearCursorRef.current = false;
+        setIsNearCursor(false);
+      }
+    };
+
     window.addEventListener("pointerdown", handleGlobalPointerDown);
     window.addEventListener("pointermove", handleGlobalPointerMove);
     window.addEventListener("pointerup", handleGlobalPointerUp);
     window.addEventListener("pointercancel", handleGlobalPointerUp);
+    window.addEventListener("pointerleave", handleWindowPointerLeave);
+    window.addEventListener("keydown", handleUserActivity, { passive: true });
+    window.addEventListener("scroll", handleUserActivity, { passive: true });
+    document.addEventListener("mouseover", handleComponentInspect, { passive: true });
+    window.addEventListener("mascot-inspect-component", handleCustomInspect);
 
     return () => {
       window.removeEventListener("pointerdown", handleGlobalPointerDown);
       window.removeEventListener("pointermove", handleGlobalPointerMove);
       window.removeEventListener("pointerup", handleGlobalPointerUp);
       window.removeEventListener("pointercancel", handleGlobalPointerUp);
+      window.removeEventListener("pointerleave", handleWindowPointerLeave);
+      window.removeEventListener("keydown", handleUserActivity);
+      window.removeEventListener("scroll", handleUserActivity);
+      document.removeEventListener("mouseover", handleComponentInspect);
+      window.removeEventListener("mascot-inspect-component", handleCustomInspect);
     };
   }, [isReady, storeApi]);
+
+  // ── Close Command HUD on Outside Click ──
+  useEffect(() => {
+    if (!isHUDOpen) return;
+    const handleOutsideClick = (e: PointerEvent | MouseEvent) => {
+      const target = e.target;
+      if (target && target instanceof Node) {
+        if (
+          hudRef.current?.contains(target) ||
+          menuBtnRef.current?.contains(target) ||
+          astronautRef.current?.contains(target)
+        ) {
+          return;
+        }
+      }
+      setIsHUDOpen(false);
+    };
+    window.addEventListener("pointerdown", handleOutsideClick, true);
+    return () => {
+      window.removeEventListener("pointerdown", handleOutsideClick, true);
+    };
+  }, [isHUDOpen]);
 
   // -------------------------------------------------------------------------
   // 3. Listen for AI Transmitting State from MascotChat
@@ -600,9 +948,9 @@ export function FlyingMascotCompanion() {
     const tick = (now: number) => {
       animId = requestAnimationFrame(tick);
 
-      // Safeguard 1: Pause physics if minigame is open
+      // Safeguard 1: Pause physics if minigame is open or cutscene is active
       const storeState = storeApi.getState();
-      if (storeState.isMinigameOpen) {
+      if (storeState.isMinigameOpen || cutscenePhaseRef.current !== "none") {
         lastTimeRef.current = now;
         return;
       }
@@ -783,7 +1131,8 @@ export function FlyingMascotCompanion() {
               vx: (Math.random() - 0.5) * 2.5,
               vy: Math.random() * 2.0 + 1.0,
               life: 0.7,
-              color: Math.random() > 0.3 ? "#38bdf8" : "#fbbf24",
+              color: Math.random() > 0.3 ? "#00F5FF" : "#FFE600",
+              size: 4,
             });
           }
 
@@ -838,7 +1187,8 @@ export function FlyingMascotCompanion() {
                 vx: -vel.vx * 0.05 + (Math.random() - 0.5) * 2,
                 vy: -vel.vy * 0.05 + (Math.random() - 0.5) * 2,
                 life: 0.85,
-                color: Math.random() > 0.4 ? "#f97316" : "#fbbf24",
+                color: Math.random() > 0.4 ? "#FFE600" : "#00F5FF",
+                size: 4,
               });
             }
           }
@@ -908,7 +1258,8 @@ export function FlyingMascotCompanion() {
                 vx: (Math.random() - 0.5) * 1.5,
                 vy: Math.random() * 2.8 + 2.2,
                 life: 0.65,
-                color: Math.random() > 0.3 ? "#38bdf8" : "#fbbf24",
+                color: Math.random() > 0.3 ? "#00F5FF" : "#FFE600",
+                size: 4,
               });
               // Right boot nozzle
               particlesRef.current.push({
@@ -917,7 +1268,8 @@ export function FlyingMascotCompanion() {
                 vx: (Math.random() - 0.5) * 1.5,
                 vy: Math.random() * 2.8 + 2.2,
                 life: 0.65,
-                color: Math.random() > 0.3 ? "#38bdf8" : "#fbbf24",
+                color: Math.random() > 0.3 ? "#00F5FF" : "#FFE600",
+                size: 4,
               });
             } else {
               particlesRef.current.push({
@@ -926,7 +1278,8 @@ export function FlyingMascotCompanion() {
                 vx: -vel.vx * 0.04 + (Math.random() - 0.5) * 1.5,
                 vy: -vel.vy * 0.04 + (Math.random() - 0.5) * 1.5,
                 life: 0.65,
-                color: "#38bdf8",
+                color: "#00F5FF",
+                size: 4,
               });
             }
           }
@@ -943,8 +1296,7 @@ export function FlyingMascotCompanion() {
             idleTimeRef.current = -3.5;
             updatePose("idle");
             playRetroMenuSound();
-            setIsNearRight(pos.x > window.innerWidth / 2);
-            setIsNearBottom(pos.y > window.innerHeight / 2);
+            updateEdgeAwareness(pos.x, pos.y);
             setIsHUDOpen(false);
           }
         }
@@ -1041,7 +1393,8 @@ export function FlyingMascotCompanion() {
                 vx: (Math.random() - 0.5) * 2 - (dx / dist) * 2,
                 vy: (Math.random() - 0.5) * 2 - (dy / dist) * 2,
                 life: 1.0,
-                color: "#38bdf8",
+                color: "#00F5FF",
+                size: 4,
               });
             }
           } else {
@@ -1092,6 +1445,24 @@ export function FlyingMascotCompanion() {
               const damping = Math.pow(0.92, dt * 60);
               vel.vx *= damping;
               vel.vy *= damping;
+
+              // ── Inactivity Snooze Engine (35s idle) ───────────────
+              if (
+                now - lastActiveTimeRef.current > 35000 &&
+                !isHUDOpen &&
+                !isSpeechBubbleVisible &&
+                !tourSpeech &&
+                !storeState.isSpeedRunActive &&
+                !storeState.isMinigameOpen &&
+                !storeState.isSolarTourActive &&
+                !isDraggingRef.current &&
+                acrobat.phase === "none"
+              ) {
+                if (poseRef.current !== "snooze") {
+                  updatePose("snooze");
+                }
+                roam.restDuration = Math.max(roam.restDuration, roam.restElapsed + 15);
+              }
 
               if (roam.restElapsed >= roam.restDuration) {
                 // Transition to active roam flight: auto-hide any speech bubble
@@ -1270,7 +1641,8 @@ export function FlyingMascotCompanion() {
                           vx: (Math.random() - 0.5) * 4,
                           vy: (Math.random() - 0.5) * 4,
                           life: 0.8,
-                          color: Math.random() > 0.4 ? "#38bdf8" : "#fbbf24",
+                          color: Math.random() > 0.4 ? "#00F5FF" : "#FFE600",
+                          size: 4,
                         });
                       }
                     } else if (stunt.type === "turbo_boost") {
@@ -1293,7 +1665,8 @@ export function FlyingMascotCompanion() {
                           vx: (Math.random() - 0.5) * 5,
                           vy: (Math.random() - 0.5) * 5,
                           life: 0.8,
-                          color: "#38bdf8",
+                          color: "#00F5FF",
+                          size: 4,
                         });
                       }
                     }
@@ -1328,7 +1701,8 @@ export function FlyingMascotCompanion() {
                     vx: (Math.random() - 0.5) * 2.5,
                     vy: (Math.random() - 0.5) * 2.5,
                     life: 0.75,
-                    color: Math.random() > 0.3 ? "#38bdf8" : "#fbbf24",
+                    color: Math.random() > 0.3 ? "#00F5FF" : "#FFE600",
+                    size: 4,
                   });
                 }
 
@@ -1359,7 +1733,8 @@ export function FlyingMascotCompanion() {
                     vx: -vel.vx * 0.25 + (Math.random() - 0.5) * 2,
                     vy: -vel.vy * 0.25 + (Math.random() - 0.5) * 2,
                     life: 0.8,
-                    color: "#38bdf8",
+                    color: "#00F5FF",
+                    size: 4,
                   });
                 }
                 if (surgeProgress >= 1.0) {
@@ -1377,7 +1752,8 @@ export function FlyingMascotCompanion() {
                       vx: -vel.vx * 0.25 + (Math.random() - 0.5) * 2,
                       vy: -vel.vy * 0.25 + (Math.random() - 0.5) * 2,
                       life: 0.9,
-                      color: Math.random() > 0.4 ? "#38bdf8" : "#f97316",
+                      color: Math.random() > 0.4 ? "#00F5FF" : "#F97316",
+                      size: 4,
                     });
                   }
                   if (roam.turbo.elapsed >= roam.turbo.duration) {
@@ -1519,18 +1895,21 @@ export function FlyingMascotCompanion() {
           }
 
           if (bounced) {
-            // High-energy pinball impact sparks
-            if (particlesRef.current.length < 32) {
-              for (let i = 0; i < 6; i++) {
-                particlesRef.current.push({
-                  x: pos.x + 28,
-                  y: pos.y + 28,
-                  vx: (Math.random() - 0.5) * 5 + vel.vx * 0.1,
-                  vy: (Math.random() - 0.5) * 5 + vel.vy * 0.1,
-                  life: 0.7,
-                  color: Math.random() > 0.4 ? "#38bdf8" : "#fbbf24",
-                });
-              }
+            bounceTimeRef.current = now;
+            // High-energy pinball impact: 8-10 explosive square pixel shards radiating out from collision point
+            const shardColors = ["#FFE600", "#00F5FF", "#FFFFFF", "#FACC15"];
+            for (let i = 0; i < 9; i++) {
+              const shardAngle = Math.random() * Math.PI * 2;
+              const shardSpeed = 2.5 + Math.random() * 4.5;
+              particlesRef.current.push({
+                x: pos.x + 28,
+                y: pos.y + 28,
+                vx: Math.cos(shardAngle) * shardSpeed + vel.vx * 0.15,
+                vy: Math.sin(shardAngle) * shardSpeed + vel.vy * 0.15,
+                life: 0.85,
+                color: shardColors[Math.floor(Math.random() * shardColors.length)],
+                size: Math.random() > 0.5 ? 4 : 5,
+              });
             }
             if (now - lastBounceTimeRef.current > 150) {
               lastBounceTimeRef.current = now;
@@ -1538,17 +1917,19 @@ export function FlyingMascotCompanion() {
             }
           }
 
-          // Emit jetpack particles when flying with speed
-          const speed = Math.hypot(vel.vx, vel.vy);
-          if (speed > 1.8 && !roamRef.current.pathLoop.active) {
-            if (particlesRef.current.length < 24) {
+          // Emit jetpack particles when flying with speed (TotM Arcade Yellow & Neon Cyan)
+          const flightSpeed = Math.hypot(vel.vx, vel.vy);
+          if (flightSpeed > 1.8 && !roamRef.current.pathLoop.active) {
+            if (particlesRef.current.length < 28) {
+              const trailColors = ["#FFE600", "#00F5FF", "#FFFFFF", "#F97316"];
               particlesRef.current.push({
                 x: pos.x + 28,
                 y: pos.y + 44,
                 vx: -vel.vx * 0.2 + (Math.random() - 0.5) * 1.5,
                 vy: -vel.vy * 0.2 + (Math.random() - 0.5) * 1.5,
                 life: 1.0,
-                color: Math.random() > 0.4 ? "#f97316" : "#fbbf24",
+                color: trailColors[Math.floor(Math.random() * trailColors.length)],
+                size: Math.random() > 0.4 ? 4 : 3,
               });
             }
           }
@@ -1591,6 +1972,36 @@ export function FlyingMascotCompanion() {
         acrobatRef.current.tilt = 0;
       }
 
+      // ── Dynamic Squash & Stretch Kinematics ─────────────────────────
+      let scaleX = 1;
+      let scaleY = 1;
+
+      // 1. Dynamic speed stretch along travel vector
+      if (speed > 0.8) {
+        scaleY = 1 + Math.min(0.32, speed * 0.022);
+        scaleX = 1 / Math.sqrt(scaleY);
+      }
+
+      // 2. Wall bounce impact squash
+      const bounceAge = (now - bounceTimeRef.current) / 1000;
+      if (bounceAge < 0.28) {
+        const bounceSquash = Math.sin((bounceAge / 0.28) * Math.PI) * (1 - bounceAge / 0.28) * 0.45;
+        scaleX *= (1 + bounceSquash);
+        scaleY *= (1 - bounceSquash * 0.7);
+      }
+
+      // 3. Idle heartbeat bob when resting
+      if (
+        speed < 0.8 &&
+        !isDraggingRef.current &&
+        acrobatRef.current.phase === "none" &&
+        roamRef.current.phase === "resting"
+      ) {
+        const idleBounce = Math.sin(now * 0.007) * 0.05;
+        scaleY = 1 + idleBounce;
+        scaleX = 1 - idleBounce * 0.5;
+      }
+
       // Subtle zero-G harmonic hover when idling / resting
       const hoverOffset = (speed < 0.8 && !isDraggingRef.current && acrobatRef.current.phase === "none" && roamRef.current.phase === "resting")
         ? Math.sin(now * 0.0025) * 4
@@ -1601,10 +2012,24 @@ export function FlyingMascotCompanion() {
         astronautRef.current.style.transform = `translate3d(${pos.x}px, ${pos.y + hoverOffset}px, 0px)`;
       }
       if (spriteWrapperRef.current) {
-        spriteWrapperRef.current.style.transform = `scaleX(${flipXRef.current ? -1 : 1}) rotate(${tiltDeg}deg)`;
+        spriteWrapperRef.current.style.transform = `scale(${(flipXRef.current ? -1 : 1) * scaleX}, ${scaleY}) rotate(${tiltDeg}deg)`;
       }
 
-      // Render Canvas Particles
+      // Update proximity state if mascot moved near/away from stationary cursor
+      if (lastMousePosRef.current) {
+        const dx = lastMousePosRef.current.x - (pos.x + 29);
+        const dy = lastMousePosRef.current.y - (pos.y + 29);
+        const isNear = Math.hypot(dx, dy) <= 120;
+        if (isNearCursorRef.current !== isNear) {
+          isNearCursorRef.current = isNear;
+          setIsNearCursor(isNear);
+        }
+      }
+
+      // Synchronize edge awareness (near-top flip, left/right clamping) with zero-G movement
+      updateEdgeAwareness(pos.x, pos.y);
+
+      // Render Canvas Particles (Tomb of the Mask Retro Square Shards)
       const canvas = canvasRef.current;
       if (canvas) {
         const ctx = canvas.getContext("2d");
@@ -1618,7 +2043,8 @@ export function FlyingMascotCompanion() {
             if (p.life > 0) {
               ctx.fillStyle = p.color;
               ctx.globalAlpha = p.life;
-              ctx.fillRect(p.x, p.y, 4, 4);
+              const pSize = p.size || 4;
+              ctx.fillRect(p.x, p.y, pSize, pSize);
               activeParticles.push(p);
             }
           }
@@ -1707,21 +2133,54 @@ export function FlyingMascotCompanion() {
     isDraggingRef.current = false;
 
     // DIRECT CLICK ON MASCOT (< 6px movement):
-    // Directly opens / toggles the 3-option ARIA Command HUD without any acrobatics!
     if (totalDragDistanceRef.current < 6) {
+      const now = performance.now();
+      lastActiveTimeRef.current = now;
+
+      if (poseRef.current === "snooze") {
+        updatePose("idle");
+        return;
+      }
+
+      if (isHUDOpen) {
+        setIsHUDOpen(false);
+        updatePose("idle");
+        pokeCountRef.current = 0;
+        return;
+      }
+
+      // Direct click (< 6px drag) on ARIA MUST ALWAYS poke/pet her
+      // (poke pose, sound, quip, somersault). Double-click HUD logic removed.
+      pokeCountRef.current = 0;
+
+      // Playful Poke / Pet Interaction!
       ensureAudioResumed();
-      playRetroMenuSound();
+      playRetroJumpSound();
       setIsSpeechBubbleVisible(false);
-      setIsHUDOpen((prev) => {
-        const next = !prev;
-        if (next) {
-          velRef.current = { vx: 0, vy: 0 };
+      updatePose("poke");
+      updateEdgeAwareness(posRef.current.x, posRef.current.y);
+
+      const randomQuip = POKE_REACTIONS[Math.floor(Math.random() * POKE_REACTIONS.length)];
+      setTourSpeech(randomQuip);
+      clearTourTimeouts();
+
+      const tSpeech = setTimeout(() => {
+        setTourSpeech(null);
+      }, 3500);
+
+      const tSomersault = setTimeout(() => {
+        if (poseRef.current === "poke") {
+          updatePose("spin");
+          isSpinningRef.current = true;
+          const tEndSpin = setTimeout(() => {
+            isSpinningRef.current = false;
+            if (poseRef.current === "spin") updatePose("idle");
+          }, 400);
+          tourTimeoutRef.current.push(tEndSpin);
         }
-        return next;
-      });
-      updatePose("idle");
-      setIsNearRight(posRef.current.x > window.innerWidth / 2);
-      setIsNearBottom(posRef.current.y > window.innerHeight / 2);
+      }, 600);
+
+      tourTimeoutRef.current.push(tSpeech, tSomersault);
       return;
     }
 
@@ -1752,13 +2211,31 @@ export function FlyingMascotCompanion() {
       updatePose("idle");
     }
 
-    setIsNearRight(posRef.current.x > window.innerWidth / 2);
-    setIsNearBottom(posRef.current.y > window.innerHeight / 2);
+    updateEdgeAwareness(posRef.current.x, posRef.current.y);
   };
 
   // -------------------------------------------------------------------------
-  // 6. Action Handlers (Speed Run, Chat, Mini Game)
+  // 6. Action Handlers (Speed Run, Chat, Mini Game, Menu)
   // -------------------------------------------------------------------------
+  const handleToggleMenu = (e?: React.SyntheticEvent) => {
+    if (e) {
+      e.stopPropagation();
+    }
+    ensureAudioResumed();
+    playRetroMenuSound();
+    if (isHUDOpen) {
+      setIsHUDOpen(false);
+    } else {
+      setIsSpeechBubbleVisible(false);
+      setTourSpeech(null);
+      clearTourTimeouts();
+      updateEdgeAwareness(posRef.current.x, posRef.current.y);
+      velRef.current = { vx: 0, vy: 0 };
+      updatePose("idle");
+      setIsHUDOpen(true);
+    }
+  };
+
   const handleOpenAIChat = (e?: React.MouseEvent) => {
     if (e) {
       e.stopPropagation();
@@ -1799,17 +2276,298 @@ export function FlyingMascotCompanion() {
     if (el) el.scrollIntoView({ behavior: "smooth" });
   };
 
+  // ---------------------------------------------------------------------------
+  // Phase 38: Cinematic Warp-In & Warp-Out Cutscenes with Skip Handling
+  // ---------------------------------------------------------------------------
+
+  const skipCutscene = useCallback(
+    (e?: React.SyntheticEvent | Event) => {
+      if (!skipArmedRef.current || cutscenePhaseRef.current === "none") return;
+      if (e) {
+        e.stopPropagation();
+        if ("preventDefault" in e) e.preventDefault();
+      }
+
+      if (loopRafRef.current) {
+        cancelAnimationFrame(loopRafRef.current);
+        loopRafRef.current = null;
+      }
+
+      if (cutsceneTimerRef.current) {
+        clearTimeout(cutsceneTimerRef.current);
+        cutsceneTimerRef.current = null;
+      }
+
+      const wasEntering =
+        cutscenePhaseRef.current === "warp_in_loop" ||
+        cutscenePhaseRef.current === "warp_in_portal";
+
+      stopCutsceneAudio();
+      document.body.style.overflow = "";
+
+      cutscenePhaseRef.current = "none";
+      setCutscenePhase("none");
+      setCutsceneQuip(null);
+      skipArmedRef.current = false;
+
+      if (astronautRef.current && spriteWrapperRef.current) {
+        astronautRef.current.style.transition = "";
+        spriteWrapperRef.current.style.transition = "";
+        astronautRef.current.style.filter = "";
+        astronautRef.current.style.opacity = "1";
+      }
+
+      updatePose("idle");
+      resetRoamToIdle(roamRef.current);
+
+      if (wasEntering) {
+        setMinigameOpen(true);
+      }
+    },
+    [updatePose, setMinigameOpen]
+  );
+
+  // Arm skip listener with 150ms buffer and capture window events
+  useEffect(() => {
+    if (cutscenePhase === "none") return;
+
+    skipArmedRef.current = false;
+    const armTimer = setTimeout(() => {
+      skipArmedRef.current = true;
+    }, 150);
+
+    const handleGlobalSkip = (e: Event) => {
+      if (!skipArmedRef.current) return;
+      skipCutscene(e);
+    };
+
+    window.addEventListener("pointerdown", handleGlobalSkip, true);
+    window.addEventListener("keydown", handleGlobalSkip, true);
+
+    return () => {
+      clearTimeout(armTimer);
+      window.removeEventListener("pointerdown", handleGlobalSkip, true);
+      window.removeEventListener("keydown", handleGlobalSkip, true);
+    };
+  }, [cutscenePhase, skipCutscene]);
+
+  // Clean unmount safety
+  useEffect(() => {
+    return () => {
+      if (loopRafRef.current) {
+        cancelAnimationFrame(loopRafRef.current);
+        loopRafRef.current = null;
+      }
+      if (cutsceneTimerRef.current) {
+        clearTimeout(cutsceneTimerRef.current);
+        cutsceneTimerRef.current = null;
+      }
+      stopCutsceneAudio();
+      document.body.style.overflow = "";
+    };
+  }, []);
+
+  // Phase 45: In-Place Loop-de-Loop & Rear Rick & Morty Portal Entry Cutscene
+  const startWarpInLoop = () => {
+    ensureAudioResumed();
+    skipArmedRef.current = false;
+    cutscenePhaseRef.current = "warp_in_loop";
+    setCutscenePhase("warp_in_loop");
+    updatePose("spin");
+
+    const x0 = posRef.current.x;
+    const y0 = posRef.current.y;
+    const dir =
+      flipXRef.current || velRef.current.vx < -0.2 || x0 > window.innerWidth * 0.7
+        ? -1
+        : 1;
+
+    const isLoopDownward = y0 < 100;
+    const R = isLoopDownward
+      ? Math.min(55, Math.max(35, (window.innerHeight - y0 - 40) / 2))
+      : Math.min(55, Math.max(35, (y0 - 40) / 2));
+    const cy = isLoopDownward ? y0 + R : y0 - R;
+
+    const pX = Math.max(80, Math.min(window.innerWidth - 80, x0 - dir * 95));
+    const pY = Math.max(80, Math.min(window.innerHeight - 80, y0));
+    setRickMortyPortalPos({ x: pX, y: pY });
+
+    playWarpJumpSound();
+
+    if (astronautRef.current && spriteWrapperRef.current) {
+      astronautRef.current.style.transition = "none";
+      spriteWrapperRef.current.style.transition = "none";
+    }
+
+    const duration = 1000;
+    const startTime = performance.now();
+    let portalTriggered = false;
+
+    const loopStep = (now: number) => {
+      const elapsed = now - startTime;
+      const u = Math.min(1, Math.max(0, elapsed / duration));
+      const theta = 2 * Math.PI * u;
+      const x = x0 + dir * R * Math.sin(theta);
+      const y = isLoopDownward
+        ? cy - R * Math.cos(theta)
+        : cy + R * Math.cos(theta);
+
+      posRef.current = { x, y };
+
+      if (astronautRef.current && spriteWrapperRef.current) {
+        astronautRef.current.style.transform = `translate3d(${x}px, ${y}px, 0px)`;
+        spriteWrapperRef.current.style.transform = `scaleX(${dir}) rotate(${-dir * u * 360}deg)`;
+      }
+
+      if (u >= 0.65 && !portalTriggered) {
+        portalTriggered = true;
+        cutscenePhaseRef.current = "warp_in_portal";
+        setCutscenePhase("warp_in_portal");
+        playRickMortyPortalSound();
+      }
+
+      if (u < 1) {
+        loopRafRef.current = requestAnimationFrame(loopStep);
+      } else {
+        loopRafRef.current = null;
+        if (astronautRef.current && spriteWrapperRef.current) {
+          astronautRef.current.style.transition =
+            "transform 350ms cubic-bezier(0.12, 0.8, 0.32, 1.15)";
+          astronautRef.current.style.transform = `translate3d(${pX}px, ${pY}px, 0px) scale(0)`;
+          spriteWrapperRef.current.style.transition =
+            "transform 350ms cubic-bezier(0.12, 0.8, 0.32, 1.15)";
+          spriteWrapperRef.current.style.transform = `scaleX(${dir}) scale(0) rotate(${-dir * 720}deg)`;
+        }
+
+        cutsceneTimerRef.current = setTimeout(() => {
+          stopCutsceneAudio();
+          setMinigameOpen(true);
+          cutscenePhaseRef.current = "none";
+          setCutscenePhase("none");
+          updatePose("idle");
+          if (astronautRef.current && spriteWrapperRef.current) {
+            astronautRef.current.style.transition = "";
+            spriteWrapperRef.current.style.transition = "";
+          }
+        }, 350);
+      }
+    };
+
+    loopRafRef.current = requestAnimationFrame(loopStep);
+  };
+
   const handleOpenMinigame = (e?: React.MouseEvent) => {
     if (e) {
       e.stopPropagation();
       e.preventDefault();
     }
-    resetRoamToIdle(roamRef.current);
     ensureAudioResumed();
-    playRetroCoinSound();
     setIsHUDOpen(false);
-    setMinigameOpen(true);
+    setIsSpeechBubbleVisible(false);
+    setTourSpeech(null);
+    resetRoamToIdle(roamRef.current);
+    acrobatRef.current.phase = "none";
+    stopCutsceneAudio();
+    document.body.style.overflow = "";
+    setFlythroughActive(false);
+
+    startWarpInLoop();
   };
+
+  // 2. Warp-Out Cutscene: Rick & Morty Sideways Portal -> Horizontal High-Speed Spew -> Comedic Puke
+  const handleMinigameExitCutscene = () => {
+    ensureAudioResumed();
+    skipArmedRef.current = false;
+    cutscenePhaseRef.current = "warp_out_portal";
+    setCutscenePhase("warp_out_portal");
+    stopCutsceneAudio();
+    playRickMortyPortalSound();
+
+    const pX = Math.min(180, window.innerWidth * 0.22);
+    const pY = Math.max(140, Math.min(window.innerHeight * 0.38, 360));
+    setRickMortyPortalPos({ x: pX, y: pY });
+
+    posRef.current = { x: pX, y: pY };
+    if (astronautRef.current && spriteWrapperRef.current) {
+      astronautRef.current.style.transition = "none";
+      astronautRef.current.style.transform = `translate3d(${pX}px, ${pY}px, 0px) scale(0)`;
+      spriteWrapperRef.current.style.transition = "none";
+      spriteWrapperRef.current.style.transform = `scale(0) rotate(-720deg)`;
+    }
+
+    cutsceneTimerRef.current = setTimeout(() => {
+      startWarpOutSpew(pX, pY);
+    }, 380);
+  };
+
+  const startWarpOutSpew = (pX: number, pY: number) => {
+    cutscenePhaseRef.current = "warp_out_spew";
+    setCutscenePhase("warp_out_spew");
+    playComedicEjectSound();
+    updatePose("spin");
+
+    const targetX = Math.min(window.innerWidth - 180, pX + 440);
+    const targetY = pY + 30;
+    posRef.current = { x: targetX, y: targetY };
+
+    if (astronautRef.current && spriteWrapperRef.current) {
+      astronautRef.current.style.transition =
+        "transform 650ms cubic-bezier(0.12, 0.8, 0.32, 1.15)";
+      spriteWrapperRef.current.style.transition =
+        "transform 650ms cubic-bezier(0.12, 0.8, 0.32, 1.15)";
+      astronautRef.current.style.transform = `translate3d(${targetX}px, ${targetY}px, 0px) scale(1)`;
+      spriteWrapperRef.current.style.transform = `scale(1) rotate(720deg)`;
+    }
+
+    cutsceneTimerRef.current = setTimeout(() => {
+      startWarpOutPuke(targetX, targetY);
+    }, 680);
+  };
+
+  const startWarpOutPuke = (targetX: number, targetY: number) => {
+    cutscenePhaseRef.current = "warp_out_puke";
+    setCutscenePhase("warp_out_puke");
+    stopCutsceneAudio();
+    playComedicRetchSound();
+    updatePose("drag");
+    setCutsceneQuip(
+      "BLEAAARGH! 🤮 Ugh... dimensional turbulence is the worst. Never eating zero-G burritos before warping again..."
+    );
+
+    if (astronautRef.current && spriteWrapperRef.current) {
+      astronautRef.current.style.transition = "transform 250ms ease-out";
+      spriteWrapperRef.current.style.transition = "transform 250ms ease-out";
+      astronautRef.current.style.transform = `translate3d(${targetX}px, ${targetY}px, 0px) scale(1)`;
+      spriteWrapperRef.current.style.transform = `scale(1) rotate(14deg)`;
+      posRef.current = { x: targetX, y: targetY };
+    }
+
+    cutsceneTimerRef.current = setTimeout(() => {
+      completeWarpOut();
+    }, 1800);
+  };
+
+  const completeWarpOut = () => {
+    stopCutsceneAudio();
+    cutscenePhaseRef.current = "none";
+    setCutscenePhase("none");
+    setCutsceneQuip(null);
+    updatePose("idle");
+    resetRoamToIdle(roamRef.current);
+
+    if (astronautRef.current && spriteWrapperRef.current) {
+      astronautRef.current.style.transition = "";
+      spriteWrapperRef.current.style.transition = "";
+    }
+  };
+
+  // Strictly gate Warp-Out Cutscene to true -> false transition of isMinigameOpen
+  useEffect(() => {
+    if (wasMinigameOpenRef.current && !isMinigameOpen) {
+      handleMinigameExitCutscene();
+    }
+    wasMinigameOpenRef.current = isMinigameOpen;
+  }, [isMinigameOpen]);
 
   if (!isReady) return null;
 
@@ -1855,8 +2613,251 @@ export function FlyingMascotCompanion() {
         </div>
       </div>
 
+      {/* ── Phase 38 & 44: Rick & Morty Sideways Fluid Portal (Warp Cutscenes) ─── */}
+      {(cutscenePhase.startsWith("warp_out") || cutscenePhase === "warp_in_portal") && (
+        <div
+          className="fixed pointer-events-none z-[99998] will-change-transform"
+          style={{
+            left: rickMortyPortalPos.x,
+            top: rickMortyPortalPos.y,
+            transform: "translate(-50%, -50%)",
+          }}
+        >
+          <div
+            className={`relative w-48 h-64 flex items-center justify-center ${
+              cutscenePhase === "warp_out_dizzy"
+                ? "animate-out zoom-out-0 duration-700 opacity-60"
+                : "animate-in zoom-in-0 duration-300"
+            }`}
+          >
+            {/* Outer Lime Green Fluid Nebula Aura */}
+            <div
+              className="absolute inset-0 rounded-full blur-2xl opacity-90 animate-pulse"
+              style={{
+                background:
+                  "radial-gradient(ellipse at center, rgba(74,222,128,0.7) 0%, rgba(163,230,53,0.5) 45%, rgba(34,197,94,0.3) 70%, transparent 100%)",
+              }}
+            />
+
+            {/* Fluid Dimensional Portal Vortex (Squishy Sideways Oval) */}
+            <svg
+              className="absolute inset-0 w-full h-full animate-spin"
+              style={{ animationDuration: "1.6s" }}
+              viewBox="0 0 160 220"
+            >
+              {/* Outer swirling fluid ring */}
+              <ellipse
+                cx="80"
+                cy="110"
+                rx="65"
+                ry="95"
+                fill="none"
+                stroke="url(#rmPortalGrad1)"
+                strokeWidth="9"
+                strokeDasharray="45 20 60 25"
+                strokeLinecap="round"
+                style={{ filter: "drop-shadow(0 0 18px rgba(74,222,128,0.95))" }}
+              />
+              {/* Inner fluid bubbling spiral */}
+              <ellipse
+                cx="80"
+                cy="110"
+                rx="48"
+                ry="72"
+                fill="none"
+                stroke="url(#rmPortalGrad2)"
+                strokeWidth="7"
+                strokeDasharray="30 20 40 15"
+                strokeLinecap="round"
+                style={{ filter: "drop-shadow(0 0 14px rgba(163,230,53,0.9))" }}
+              />
+              <defs>
+                <linearGradient id="rmPortalGrad1" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#4ade80" />
+                  <stop offset="50%" stopColor="#a3e635" />
+                  <stop offset="100%" stopColor="#22c55e" />
+                </linearGradient>
+                <linearGradient id="rmPortalGrad2" x1="100%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stopColor="#86efac" />
+                  <stop offset="50%" stopColor="#4ade80" />
+                  <stop offset="100%" stopColor="#65a30d" />
+                </linearGradient>
+              </defs>
+            </svg>
+
+            {/* Dripping Green Spark Particles & Blobs */}
+            <div className="absolute inset-2 flex items-center justify-center">
+              <div className="w-20 h-32 rounded-full bg-emerald-950/90 border-2 border-lime-300 shadow-[0_0_25px_#4ade80,inset_0_0_15px_#a3e635] flex items-center justify-center overflow-hidden">
+                <div className="w-8 h-12 rounded-full bg-lime-300/80 blur-md animate-ping" />
+              </div>
+            </div>
+
+            {/* Portal Eject Fluid Flares */}
+            <div className="absolute -right-6 top-1/2 -translate-y-1/2 flex flex-col gap-3 pointer-events-none">
+              <span className="w-8 h-1.5 rounded-full bg-lime-400 blur-[1px] animate-pulse" />
+              <span className="w-12 h-2 rounded-full bg-emerald-300 blur-[1px] animate-pulse" />
+              <span className="w-6 h-1 rounded-full bg-lime-200 blur-[1px] animate-pulse" />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Cutscene Dialogue Quip Bubble ─── */}
+      {cutsceneQuip && (
+        <div
+          id="cutscene-dialogue-quip"
+          data-testid="cutscene-dialogue-quip"
+          className="fixed pointer-events-none z-[100004] will-change-transform animate-in zoom-in-75 duration-200"
+          style={{
+            left: Math.max(16, Math.min(window.innerWidth - 320, posRef.current.x - 70)),
+            top: Math.max(20, posRef.current.y - 75),
+          }}
+        >
+          <div
+            className="relative bg-slate-950/95 border-2 border-lime-400 text-lime-300 shadow-[0_0_20px_rgba(74,222,128,0.7)] font-mono text-[11px] font-bold px-3 py-1.5 rounded-xl flex items-center gap-2 max-w-[340px]"
+          >
+            <span className="text-base animate-bounce">
+              {cutscenePhase === "warp_out_puke" ? "🤮" : "💫"}
+            </span>
+            <span className="leading-tight">{cutsceneQuip}</span>
+          </div>
+        </div>
+      )}
+
+      {/* ── Phase 39: Comedic Portal Puke Droplets Spray & Splat Puddle ── */}
+      {cutscenePhase === "warp_out_puke" && (
+        <div
+          id="mascot-puke-spray"
+          data-testid="mascot-puke-spray"
+          className="fixed pointer-events-none z-[100002] will-change-transform"
+          style={{
+            left: posRef.current.x,
+            top: posRef.current.y,
+          }}
+        >
+          <style>{`
+            @keyframes pukeArc1 {
+              0% { transform: translate(32px, 22px) scale(0.3); opacity: 0; }
+              15% { opacity: 1; }
+              60% { transform: translate(58px, 38px) scale(1.1); opacity: 0.95; }
+              100% { transform: translate(84px, 66px) scale(0.8); opacity: 0.85; }
+            }
+            @keyframes pukeArc2 {
+              0% { transform: translate(30px, 24px) scale(0.3); opacity: 0; }
+              20% { opacity: 1; }
+              65% { transform: translate(50px, 32px) scale(1.2); opacity: 0.95; }
+              100% { transform: translate(72px, 68px) scale(0.9); opacity: 0.9; }
+            }
+            @keyframes pukeArc3 {
+              0% { transform: translate(34px, 20px) scale(0.2); opacity: 0; }
+              25% { opacity: 1; }
+              70% { transform: translate(66px, 42px) scale(1.0); opacity: 0.9; }
+              100% { transform: translate(96px, 64px) scale(0.7); opacity: 0.75; }
+            }
+            @keyframes pukePuddleExpand {
+              0% { transform: scale(0.2); opacity: 0; }
+              35% { transform: scale(1); opacity: 0.95; }
+              80% { transform: scale(1.1); opacity: 0.85; }
+              100% { transform: scale(1.15); opacity: 0; }
+            }
+            @keyframes pukeRipplePulse {
+              0% { transform: scale(0.5); opacity: 0.8; }
+              100% { transform: scale(1.6); opacity: 0; }
+            }
+            @keyframes queasyJitter {
+              0%, 100% { transform: rotate(14deg) translateY(0); }
+              25% { transform: rotate(8deg) translateY(-2px); }
+              50% { transform: rotate(18deg) translateY(3px); }
+              75% { transform: rotate(11deg) translateY(-1px); }
+            }
+          `}</style>
+
+          {/* Spray Droplets Stream */}
+          <div className="absolute inset-0 pointer-events-none">
+            {/* Droplet 1 (Large Neon Green) */}
+            <div
+              className="absolute w-3.5 h-3.5 rounded-full bg-[#4ade80] shadow-[0_0_8px_#4ade80]"
+              style={{ animation: "pukeArc1 0.45s ease-out infinite" }}
+            />
+            {/* Droplet 2 (Starlight Yellow Chunk) */}
+            <div
+              className="absolute w-2.5 h-2.5 rounded-sm bg-[#facc15] shadow-[0_0_6px_#facc15]"
+              style={{ animation: "pukeArc2 0.5s ease-out infinite 0.08s" }}
+            />
+            {/* Droplet 3 (Lime Green Particle) */}
+            <div
+              className="absolute w-3 h-3 rounded-full bg-[#a3e635] shadow-[0_0_8px_#a3e635]"
+              style={{ animation: "pukeArc3 0.48s ease-out infinite 0.15s" }}
+            />
+            {/* Droplet 4 (Small Neon Green) */}
+            <div
+              className="absolute w-2 h-2 rounded-full bg-[#4ade80]"
+              style={{ animation: "pukeArc1 0.42s ease-out infinite 0.22s" }}
+            />
+            {/* Droplet 5 (Small Yellow) */}
+            <div
+              className="absolute w-2 h-2 rounded-sm bg-[#facc15]"
+              style={{ animation: "pukeArc2 0.46s ease-out infinite 0.28s" }}
+            />
+            {/* Droplet 6 (Lime Blob) */}
+            <div
+              className="absolute w-4 h-2.5 rounded-full bg-[#86efac] shadow-[0_0_10px_#86efac]"
+              style={{ animation: "pukeArc3 0.52s ease-out infinite 0.1s" }}
+            />
+          </div>
+
+          {/* Ground Splat Puddle with Expanding Ripple */}
+          <div
+            className="absolute left-16 top-14 pointer-events-none"
+            style={{ animation: "pukePuddleExpand 1.7s ease-out forwards" }}
+          >
+            {/* Puddle Ripple Rings */}
+            <div
+              className="absolute -inset-2 rounded-full border border-lime-400/60"
+              style={{ animation: "pukeRipplePulse 0.8s ease-out infinite" }}
+            />
+            <div
+              className="absolute -inset-4 rounded-full border border-emerald-400/40"
+              style={{ animation: "pukeRipplePulse 0.8s ease-out infinite 0.35s" }}
+            />
+
+            {/* Main Splat Shape SVG */}
+            <svg width="56" height="32" viewBox="0 0 56 32" className="overflow-visible">
+              <path
+                d="M 8 18 C 12 10, 22 12, 28 8 C 36 6, 44 12, 48 18 C 52 24, 42 30, 32 28 C 22 30, 14 26, 8 18 Z"
+                fill="#4ade80"
+                style={{ filter: "drop-shadow(0 0 8px rgba(74,222,128,0.9))" }}
+              />
+              <path
+                d="M 16 18 C 20 13, 26 14, 30 11 C 36 10, 40 14, 42 18 C 44 22, 38 25, 32 24 C 24 25, 20 22, 16 18 Z"
+                fill="#a3e635"
+              />
+              <circle cx="24" cy="18" r="3.5" fill="#facc15" />
+              <circle cx="34" cy="16" r="2.5" fill="#facc15" />
+              <circle cx="14" cy="22" r="2" fill="#86efac" />
+              <circle cx="44" cy="22" r="2.5" fill="#4ade80" />
+            </svg>
+          </div>
+        </div>
+      )}
+
+      {/* ── Cutscene Fullscreen Capture & Skip Handler ─── */}
+      {cutscenePhase !== "none" && (
+        <div
+          className="fixed inset-0 z-[100001] cursor-pointer bg-transparent pointer-events-auto"
+          onClick={skipCutscene}
+          onTouchStart={skipCutscene}
+        >
+          <div className="absolute bottom-6 right-6 font-mono text-[11px] font-bold text-slate-300/90 bg-slate-900/90 border border-cyan-400/50 shadow-[0_0_15px_rgba(34,211,238,0.4)] px-3 py-1.5 rounded-full backdrop-blur pointer-events-none select-none animate-pulse">
+            Click anywhere or press any key to skip ✕
+          </div>
+        </div>
+      )}
+
       {/* ── Floating Astronaut Hitbox & HUD Controller ─────────── */}
       <div
+        id="aria-pixel-mascot"
+        data-testid="aria-pixel-mascot"
         ref={astronautRef}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
@@ -1870,15 +2871,21 @@ export function FlyingMascotCompanion() {
         }}
         onPointerEnter={() => {
           isHoveredRef.current = true;
+          setIsHovered(true);
           resetRoamToIdle(roamRef.current);
         }}
-        onPointerLeave={() => { isHoveredRef.current = false; }}
-        className="fixed top-0 left-0 z-[99999] pointer-events-auto touch-action-none select-none cursor-grab active:cursor-grabbing will-change-transform"
+        onPointerLeave={() => {
+          isHoveredRef.current = false;
+          setIsHovered(false);
+        }}
+        className={`fixed top-0 left-0 z-[99999] pointer-events-auto touch-action-none select-none cursor-grab active:cursor-grabbing will-change-transform ${
+          isMinigameOpen ? "opacity-0 pointer-events-none" : ""
+        }`}
         style={{
           width: 58,
           height: 58,
         }}
-        title="ARIA Cadet — Click for protocols, hold anywhere on screen to summon!"
+        title="ARIA Cadet — Click to poke/pet, use MENU button for protocols, hold anywhere to summon!"
       >
         {/* Decoupled Inner Sprite Wrapper for Flip & Ironman Tilt */}
         <div
@@ -1886,14 +2893,60 @@ export function FlyingMascotCompanion() {
           className={`w-full h-full flex items-center justify-center will-change-transform origin-center ${
             isMascotWiggling ? "animate-bounce" : ""
           }`}
+          style={{
+            filter:
+              cutscenePhase === "warp_out_puke"
+                ? "hue-rotate(75deg) drop-shadow(0 0 10px rgba(74,222,128,0.9))"
+                : undefined,
+            animation:
+              cutscenePhase === "warp_out_puke"
+                ? "queasyJitter 0.35s ease-in-out infinite"
+                : undefined,
+          }}
         >
-          <PixelAstronaut pose={pose} size={58} />
+          <PixelAstronaut pose={pose} cursorGaze={cursorGaze} size={58} />
+
+
+          {/* Dizzy Spiral / Stars Overlay */}
+          {cutscenePhase === "warp_out_dizzy" && (
+            <div
+              className="absolute -top-4 left-1/2 -translate-x-1/2 pointer-events-none z-20 flex items-center justify-center animate-spin"
+              style={{ animationDuration: "2s" }}
+            >
+              <span className="text-base select-none">💫</span>
+            </div>
+          )}
         </div>
+
+        {/* ── Prominent Tethered Floating Cyberpunk MENU Button ── */}
+        <button
+          id="aria-menu-btn"
+          data-testid="aria-menu-btn"
+          ref={menuBtnRef}
+          type="button"
+          onPointerDown={(e) => {
+            e.stopPropagation();
+          }}
+          onClick={(e) => {
+            e.stopPropagation();
+            handleToggleMenu(e);
+          }}
+          onPointerEnter={() => setIsHovered(true)}
+          onPointerLeave={() => setIsHovered(false)}
+          className={`absolute -top-2.5 -right-3 z-[100003] px-2 py-0.5 rounded-md border-2 border-cyan-400 bg-slate-950/90 font-mono text-[11px] font-black text-cyan-300 tracking-wider shadow-[0_0_15px_rgba(34,211,238,0.6)] hover:shadow-[0_0_22px_rgba(34,211,238,0.9)] hover:border-cyan-300 hover:text-white hover:bg-slate-900 active:scale-95 transition-all duration-300 cursor-pointer minigame-cursor-native select-none animate-pulse ${
+            isNearCursor || isHovered || isHUDOpen
+              ? "opacity-100 scale-100 pointer-events-auto"
+              : "opacity-0 scale-90 pointer-events-none"
+          }`}
+          aria-label="ARIA Menu"
+        >
+          MENU
+        </button>
 
         {/* ── Interactive Mascot Cartoon Speech Bubble (Direct Parent Attached - Sticks to ARIA) ── */}
         <MascotSpeechBubble
           dialogue={activeDialogue}
-          visible={isSpeechBubbleVisible && !isHUDOpen && !tourSpeech}
+          visible={isSpeechBubbleVisible && !isHUDOpen && !tourSpeech && cutscenePhase === "none"}
           mascotX={posRef.current.x}
           mascotY={posRef.current.y}
           onCycle={handleCycleDialogue}
@@ -1916,7 +2969,18 @@ export function FlyingMascotCompanion() {
         {/* ── Dynamic Speech Bubble for Tour Oneliners & Celebrations ── */}
         {tourSpeech && (
           <div
-            className="absolute bottom-full mb-3.5 left-1/2 -translate-x-1/2 z-[100001] w-64 p-3.5 rounded-2xl bg-[#090d16]/95 border-2 border-cyan-400/90 shadow-[0_0_25px_rgba(56,189,248,0.4)] backdrop-blur-xl pointer-events-none animate-in fade-in slide-in-from-bottom-2 duration-200"
+            data-tour-speech="true"
+            className={`absolute z-[100001] w-64 p-3.5 rounded-2xl bg-[#090d16]/95 border-2 border-cyan-400/90 shadow-[0_0_25px_rgba(56,189,248,0.4)] backdrop-blur-xl pointer-events-none duration-200 ${
+              isNearTop
+                ? "top-full mt-3.5 animate-in fade-in slide-in-from-top-2"
+                : "bottom-full mb-3.5 animate-in fade-in slide-in-from-bottom-2"
+            } ${
+              isNearLeft
+                ? "left-0"
+                : isNearRight
+                ? "right-0"
+                : "left-1/2 -translate-x-1/2"
+            }`}
           >
             <div className="flex items-center gap-1.5 pb-1 mb-1 border-b border-cyan-400/20 font-mono text-[9px] uppercase tracking-widest text-starlight-gold font-bold">
               <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
@@ -1925,14 +2989,27 @@ export function FlyingMascotCompanion() {
             <p className="font-mono text-[11px] text-cyan-100 leading-snug font-medium">
               "{tourSpeech}"
             </p>
-            {/* Downward pointing triangle pointer */}
-            <div className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-x-6 border-x-transparent border-t-6 border-t-cyan-400/90" />
+            {/* Downward or upward pointing triangle pointer */}
+            <div
+              className={`absolute w-0 h-0 border-x-6 border-x-transparent ${
+                isNearTop
+                  ? "bottom-full border-b-6 border-b-cyan-400/90"
+                  : "top-full border-t-6 border-t-cyan-400/90"
+              } ${
+                isNearLeft
+                  ? "left-6"
+                  : isNearRight
+                  ? "right-6"
+                  : "left-1/2 -translate-x-1/2"
+              }`}
+            />
           </div>
         )}
 
         {/* ── Action Window with EXACTLY 3 Options (Retro Cosmic Comic Style) ───── */}
         {isHUDOpen && (
           <div
+            ref={hudRef}
             onPointerDown={(e) => e.stopPropagation()}
             onPointerUp={(e) => e.stopPropagation()}
             onClick={(e) => e.stopPropagation()}
@@ -2011,6 +3088,8 @@ export function FlyingMascotCompanion() {
             </button>
 
             <button
+              id="aria-minigame-btn"
+              data-testid="aria-minigame-btn"
               onClick={(e) => handleOpenMinigame(e)}
               onPointerDown={(e) => e.stopPropagation()}
               className="flex items-center justify-between px-3 py-2.5 rounded-xl bg-starlight-gold/20 border border-starlight-gold/50 text-starlight-gold hover:bg-starlight-gold/35 hover:border-starlight-gold/80 hover:shadow-[0_0_15px_rgba(251,191,36,0.3)] transition-all active:scale-95 text-[11px] font-bold cursor-pointer minigame-cursor-native"

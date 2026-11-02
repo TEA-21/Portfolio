@@ -24,6 +24,7 @@
  */
 
 import React, { useEffect, useRef } from "react";
+import { usePortfolioStore } from "@/lib/store/portfolio-store-provider";
 
 const VERTEX_SHADER = `#version 300 es
 in vec2 a_position;
@@ -46,6 +47,7 @@ uniform vec2 u_resolution;
 uniform vec2 u_mouse;
 uniform float u_scroll;
 uniform float u_is_mobile;
+uniform float u_warp_intensity;
 
 // ── Hash & Procedural Noise Primitives ──────────────────────────────
 float hash(vec2 p) {
@@ -145,12 +147,33 @@ vec3 computeStarfield(vec2 uv, float aspect) {
   return stars;
 }
 
+// ── 8-Tap Directional Radial Starfield Warp (Warp-Speed Fly-Through) ──
+vec3 computeStarfieldWarp(vec2 uv, float aspect, float warpIntensity) {
+  if (warpIntensity <= 0.001) {
+    return computeStarfield(uv, aspect);
+  }
+  vec3 accum = vec3(0.0);
+  float totalWeight = 0.0;
+  vec2 dir = uv - vec2(0.5);
+  float maxDist = warpIntensity * 0.18;
+
+  for (int i = 0; i < 8; ++i) {
+    float t = float(i) / 7.0;
+    vec2 sampleUV = uv - dir * (t * maxDist);
+    float weight = 1.0 - t * 0.45;
+    accum += computeStarfield(sampleUV, aspect) * weight;
+    totalWeight += weight;
+  }
+
+  return accum / totalWeight;
+}
+
 void main() {
   vec2 uv = v_uv;
   float aspect = u_resolution.x / u_resolution.y;
 
   // 1. Radial Fly-Through Scroll Math (Dividing expands outward)
-  float zoomScale = 1.0 + u_scroll * 1.8;
+  float zoomScale = 1.0 + u_scroll * 1.8 + u_warp_intensity * 3.5;
   vec2 scrolledUV = (uv - 0.5) / zoomScale + 0.5;
 
   // Opacity dissipation: keeps vibrant JWST nebula 100% visible through Hero and About Me,
@@ -160,8 +183,8 @@ void main() {
   // 3. Base Deep Space Void Canvas (#030712)
   vec3 baseVoid = vec3(0.012, 0.018, 0.040);
 
-  // 4. Procedural Starfield with JWST Diffraction Spikes
-  vec3 starColor = computeStarfield(uv, aspect);
+  // 4. Procedural Starfield with JWST Diffraction Spikes (with 8-tap Hyperspace Warp)
+  vec3 starColor = computeStarfieldWarp(uv, aspect, u_warp_intensity);
   vec3 finalColor = baseVoid + starColor;
 
   // 5. Early-Exit Branching: compute high-definition JWST nebula when visible
@@ -244,11 +267,20 @@ function createShader(gl: WebGL2RenderingContext, type: number, source: string):
 }
 
 export function CosmicBackground() {
+  const isFlythroughActive = usePortfolioStore((s) => s.isFlythroughActive);
+  const isFlythroughActiveRef = useRef(isFlythroughActive);
+
+  useEffect(() => {
+    isFlythroughActiveRef.current = isFlythroughActive;
+  }, [isFlythroughActive]);
+
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const targetMouse = useRef({ x: 0.5, y: 0.5 });
   const currentMouse = useRef({ x: 0.5, y: 0.5 });
   const targetScroll = useRef(0);
   const currentScroll = useRef(0);
+  const targetWarp = useRef(0);
+  const currentWarp = useRef(0);
   const lastTimeRef = useRef(0);
 
   useEffect(() => {
@@ -308,6 +340,7 @@ export function CosmicBackground() {
     const uMouseLoc = gl.getUniformLocation(program, "u_mouse");
     const uScrollLoc = gl.getUniformLocation(program, "u_scroll");
     const uIsMobileLoc = gl.getUniformLocation(program, "u_is_mobile");
+    const uWarpIntensityLoc = gl.getUniformLocation(program, "u_warp_intensity");
 
     // Resize handler with 1.25x DPR clamping
     const resize = () => {
@@ -365,10 +398,17 @@ export function CosmicBackground() {
       // Delta-time normalized exponential smoothing
       const mouseFactor = 1.0 - Math.exp(-8.0 * dt);
       const scrollFactor = 1.0 - Math.exp(-6.0 * dt);
+      const warpFactor = 1.0 - Math.exp(-4.5 * dt);
 
       currentMouse.current.x += (targetMouse.current.x - currentMouse.current.x) * mouseFactor;
       currentMouse.current.y += (targetMouse.current.y - currentMouse.current.y) * mouseFactor;
       currentScroll.current += (targetScroll.current - currentScroll.current) * scrollFactor;
+
+      targetWarp.current = isFlythroughActiveRef.current ? 1.0 : 0.0;
+      currentWarp.current += (targetWarp.current - currentWarp.current) * warpFactor;
+      if (Math.abs(currentWarp.current - targetWarp.current) < 0.001) {
+        currentWarp.current = targetWarp.current;
+      }
 
       // Set uniforms
       gl.uniform1f(uTimeLoc, now * 0.001);
@@ -376,6 +416,7 @@ export function CosmicBackground() {
       gl.uniform2f(uMouseLoc, currentMouse.current.x, currentMouse.current.y);
       gl.uniform1f(uScrollLoc, currentScroll.current);
       gl.uniform1f(uIsMobileLoc, window.innerWidth < 768 ? 1.0 : 0.0);
+      gl.uniform1f(uWarpIntensityLoc, currentWarp.current);
 
       gl.drawArrays(gl.TRIANGLES, 0, 6);
 

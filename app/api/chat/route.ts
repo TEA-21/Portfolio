@@ -274,8 +274,102 @@ function createFallbackResponse(text: string): Response {
   return createUIMessageStreamResponse({ stream });
 }
 
+// ---------------------------------------------------------------------------
+// Rate Limiting & Origin Guardrails
+// ---------------------------------------------------------------------------
+
+interface RateLimitEntry {
+  count: number;
+  resetAt: number;
+}
+
+const rateLimitMap = new Map<string, RateLimitEntry>();
+
+// Purge expired IP entries every minute
+if (typeof setInterval !== "undefined") {
+  setInterval(() => {
+    const now = Date.now();
+    for (const [ip, entry] of rateLimitMap.entries()) {
+      if (now > entry.resetAt) {
+        rateLimitMap.delete(ip);
+      }
+    }
+  }, 60_000);
+}
+
+function getClientIp(req: Request): string {
+  const forwarded = req.headers.get("x-forwarded-for");
+  if (forwarded) {
+    return forwarded.split(",")[0].trim();
+  }
+  return req.headers.get("x-real-ip") ?? "127.0.0.1";
+}
+
+function checkRateLimit(ip: string): boolean {
+  const now = Date.now();
+  const windowMs = 60_000;
+  const maxRequests = 15;
+
+  const current = rateLimitMap.get(ip);
+  if (!current || now > current.resetAt) {
+    rateLimitMap.set(ip, { count: 1, resetAt: now + windowMs });
+    return true;
+  }
+
+  if (current.count >= maxRequests) {
+    return false;
+  }
+
+  current.count += 1;
+  return true;
+}
+
+function isValidOrigin(req: Request): boolean {
+  const origin = req.headers.get("origin");
+  const referer = req.headers.get("referer");
+  const host = req.headers.get("host");
+
+  if (!origin && !referer) {
+    return true;
+  }
+
+  const checkUrl = origin || referer || "";
+  try {
+    const parsed = new URL(checkUrl);
+    if (
+      parsed.hostname === "localhost" ||
+      parsed.hostname === "127.0.0.1" ||
+      (host && parsed.host === host) ||
+      parsed.hostname.endsWith(".vercel.app")
+    ) {
+      return true;
+    }
+    return false;
+  } catch {
+    return true;
+  }
+}
+
 export async function POST(req: Request) {
   try {
+    // Guardrail: Origin Verification
+    if (!isValidOrigin(req)) {
+      return new Response(
+        JSON.stringify({ error: "Access Forbidden: Unauthorized cross-origin request." }),
+        { status: 403, headers: { "Content-Type": "application/json" } }
+      );
+    }
+
+    // Guardrail: Rate Limiting (15 req/min per IP)
+    const clientIp = getClientIp(req);
+    if (!checkRateLimit(clientIp)) {
+      return createFallbackResponse(
+        "⚡ [ARIA TELEMETRY ALERT: RATE LIMIT EXCEEDED]\n\n" +
+        "Rate limit threshold (15 requests/minute) reached for this network station.\n" +
+        "Cooling down neural relays... Please pause a moment before submitting your next prompt."
+      );
+    }
+
     const { messages } = await req.json();
 
     // Guardrail 6: Validate and cap incoming message history to protect token quota

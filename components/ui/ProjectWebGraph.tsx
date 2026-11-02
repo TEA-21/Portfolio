@@ -93,6 +93,7 @@ export function ProjectWebGraph() {
   return (
     <section
       id="interactive-project-web"
+      data-mascot-interest="projects"
       className="relative w-full px-2 sm:px-6 lg:px-12 py-16 min-h-screen bg-transparent overflow-hidden select-none"
     >
       {/* Main Console Container */}
