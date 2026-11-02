@@ -69,9 +69,9 @@ export function ExitActionHubModal() {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
           <button
             onClick={handleRestartTour}
-            className="p-4 rounded-xl border border-cyan-focus/40 bg-slate-900/80 hover:bg-slate-900 hover:border-cyan-focus hover:shadow-[0_0_15px_rgba(56,189,248,0.25)] transition-all text-left group"
+            className="p-4 rounded-xl border border-nebula-violet/40 bg-slate-900/80 hover:bg-slate-900 hover:border-nebula-violet hover:shadow-[0_0_15px_rgba(139,92,246,0.25)] transition-all text-left group"
           >
-            <div className="text-xs font-bold text-cyan-focus uppercase tracking-wider mb-1 flex items-center justify-between">
+            <div className="text-xs font-bold text-nebula-lavender uppercase tracking-wider mb-1 flex items-center justify-between">
               <span>🔄 RESTART TOUR</span>
               <span className="group-hover:translate-x-1 transition-transform">&rarr;</span>
             </div>

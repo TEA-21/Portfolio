@@ -22,19 +22,8 @@ export function BioDetails() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
           {/* ── Left Column (Biographical Narrative & Probe) ────────── */}
           <div className="lg:col-span-7 flex flex-col gap-5">
-            {/* Section Marker */}
-            <div className="flex items-center gap-2.5">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-nebula-violet opacity-75" />
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-nebula-violet" />
-              </span>
-              <span className="font-mono text-xs uppercase tracking-[0.25em] text-nebula-lavender drop-shadow-[0_2px_6px_rgba(0,0,0,0.9)]">
-                [ DOSSIER ]
-              </span>
-            </div>
-
             <h2 className="font-mono text-3xl sm:text-4xl font-bold tracking-tight text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.95)]">
-              //ABOUT ME
+              ABOUT ME
             </h2>
 
             <div className="flex flex-col gap-4 font-sans text-sm sm:text-base leading-relaxed text-slate-100 drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]">
@@ -42,22 +31,8 @@ export function BioDetails() {
                 I'm a B.Tech CS student at VIT Vellore and an AI/LLM Intern at Sstudize, specializing in architecting intelligent systems that scale reliably in high-throughput production environments. My core technical investments center on Python, Deep Learning, and NLP, with a principal focus on designing autonomous agentic AI frameworks and bridging the hardware-software frontier.
               </p>
               <p>
-                From engineering decentralized identity protocols using <span data-mascot-interest="skill" data-skill-name="zk" className="skill-badge text-cyan-300 font-medium underline decoration-cyan-400/40 cursor-pointer">Zero-Knowledge Proofs</span> to quantizing and deploying micro-SLMs on <span data-mascot-interest="skill" data-skill-name="esp32" className="skill-badge text-starlight-gold font-medium underline decoration-amber-400/40 cursor-pointer">ESP32 microcontrollers</span>, I treat complex bottlenecks in security and machine learning like high-stakes boss fights. When I'm not orchestrating multi-agent pipelines, I'm grinding out trophies in the Clash Royale arena, clutching rounds in Valorant, or managing my private Minecraft server infrastructure. I build tools for automation, resilience, and maximum performance.
+                From engineering decentralized identity protocols using <span data-mascot-interest="skill" data-skill-name="zk" className="skill-badge text-nebula-lavender font-medium underline decoration-nebula-violet/50 cursor-pointer">Zero-Knowledge Proofs</span> to quantizing and deploying micro-SLMs on <span data-mascot-interest="skill" data-skill-name="esp32" className="skill-badge text-starlight-gold font-medium underline decoration-amber-400/40 cursor-pointer">ESP32 microcontrollers</span>, I treat complex bottlenecks in security and machine learning like high-stakes boss fights. When I'm not orchestrating multi-agent pipelines, I'm grinding out trophies in the Clash Royale arena, clutching rounds in Valorant, or managing my private Minecraft server infrastructure. I build tools for automation, resilience, and maximum performance.
               </p>
-            </div>
-
-            {/* Celestial Telemetry Badges */}
-            <div className="flex flex-wrap items-center gap-3 mt-2 font-mono text-xs text-slate-400">
-              <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 backdrop-blur-[2px] text-emerald-400">
-                <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-                SYSTEM: NOMINAL [ACTIVE]
-              </span>
-              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-white/10 bg-white/[0.03] backdrop-blur-[2px] text-starlight-gold">
-                <span>COORDINATES:</span> INDIA (UTC+5:30)
-              </span>
-              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-white/10 bg-white/[0.03] backdrop-blur-[2px] text-nebula-lavender">
-                <span>ORBIT:</span> VIT VELLORE
-              </span>
             </div>
           </div>
 
@@ -69,14 +44,6 @@ export function BioDetails() {
 
               {/* Inner Counter-Rotating Golden Telemetry Ring */}
               <div className="absolute inset-3 rounded-full border border-starlight-gold/30 animate-orbit-ccw pointer-events-none" />
-
-              {/* Orbit Coordinate Notches */}
-              <span className="absolute -top-2 left-1/2 -translate-x-1/2 px-2.5 py-0.5 rounded-full bg-void-black/80 backdrop-blur-[2px] border border-nebula-violet/40 font-mono text-[9px] text-nebula-lavender tracking-widest uppercase shadow-md">
-                RA 19h 50m / DEC +08°
-              </span>
-              <span className="absolute -bottom-2 left-1/2 -translate-x-1/2 px-2.5 py-0.5 rounded-full bg-void-black/80 backdrop-blur-[2px] border border-starlight-gold/40 font-mono text-[9px] text-starlight-gold tracking-widest uppercase shadow-md">
-                ORBITAL NODE V4.8
-              </span>
 
               {/* The Celestial Cyber-Astronaut Portrait Lens */}
               <div className="relative w-64 h-64 sm:w-72 sm:h-72 rounded-full overflow-hidden border-2 border-nebula-violet/60 shadow-[0_0_35px_rgba(139,92,246,0.35)] group">

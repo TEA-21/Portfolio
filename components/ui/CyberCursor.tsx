@@ -129,14 +129,14 @@ export function CyberCursor() {
           // Seamless celestial color blending along the compact continuous streak
           let strokeColor: string;
           if (progress > 0.60) {
-            // Electric cyan-white ion beam near head
-            strokeColor = `rgba(125, 211, 252, ${alpha})`;
+            // Luminous lavender starlight near head
+            strokeColor = `rgba(196, 181, 253, ${alpha})`;
           } else if (progress > 0.25) {
             // Nebula violet coma in mid-trail
-            strokeColor = `rgba(168, 85, 247, ${alpha * 0.85})`;
+            strokeColor = `rgba(139, 92, 246, ${alpha * 0.85})`;
           } else {
-            // Fading stardust amber at tail tip
-            strokeColor = `rgba(245, 158, 11, ${alpha * 0.65})`;
+            // Fading stardust gold/amber at tail tip
+            strokeColor = `rgba(251, 191, 36, ${alpha * 0.65})`;
           }
 
           ctx.beginPath();
@@ -147,7 +147,7 @@ export function CyberCursor() {
           ctx.lineJoin = "round";
           ctx.strokeStyle = strokeColor;
           ctx.shadowBlur = 5 * progress;
-          ctx.shadowColor = progress > 0.5 ? "rgba(56, 189, 248, 0.5)" : "rgba(139, 92, 246, 0.4)";
+          ctx.shadowColor = progress > 0.5 ? "rgba(196, 181, 253, 0.5)" : "rgba(139, 92, 246, 0.4)";
           ctx.stroke();
         }
 

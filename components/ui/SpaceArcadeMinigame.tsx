@@ -1665,7 +1665,7 @@ export function SpaceArcadeMinigame() {
         <div className="flex items-center justify-between font-mono text-xs px-2.5 py-1.5 rounded-lg bg-black/60 border border-white/10">
           <div className="flex items-center gap-1">
             <span className="text-slate-400">ALT:</span>
-            <span className="text-cyan-300 font-bold">{altitude}m</span>
+            <span className="text-nebula-lavender font-bold">{altitude}m</span>
           </div>
           <div className="flex items-center gap-1">
             <span className="text-slate-400">SCORE:</span>
@@ -1683,7 +1683,7 @@ export function SpaceArcadeMinigame() {
             </span>
           )}
           {freezeSeconds > 0 && (
-            <span className="text-[10px] font-bold text-cyan-300 bg-cyan-500/20 px-1.5 py-0.5 rounded border border-cyan-400/40 animate-pulse">
+            <span className="text-[10px] font-bold text-nebula-lavender bg-nebula-violet/20 px-1.5 py-0.5 rounded border border-nebula-violet/40 animate-pulse">
               ❄ {freezeSeconds}s
             </span>
           )}
@@ -1792,7 +1792,7 @@ export function SpaceArcadeMinigame() {
               </span>
               <div className="flex flex-col gap-1 font-mono text-xs text-slate-300 my-1">
                 <span>
-                  Max Altitude: <strong className="text-cyan-300">{altitude}m</strong>
+                  Max Altitude: <strong className="text-nebula-lavender">{altitude}m</strong>
                 </span>
                 <span>
                   Final Score: <strong className="text-starlight-gold">{score} PTS</strong>

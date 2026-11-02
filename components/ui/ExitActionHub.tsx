@@ -47,16 +47,16 @@ export function ExitActionHub() {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md pointer-events-auto font-mono transition-all animate-in fade-in duration-300">
-      <div className="relative w-full max-w-2xl rounded-2xl border border-cyan-focus/40 bg-slate-dark/95 p-6 sm:p-8 shadow-[0_0_50px_rgba(56,189,248,0.2)] overflow-hidden">
+      <div className="relative w-full max-w-2xl rounded-2xl border border-nebula-violet/40 bg-slate-dark/95 p-6 sm:p-8 shadow-[0_0_50px_rgba(139,92,246,0.2)] overflow-hidden">
         {/* Background Glow Orbs */}
-        <div className="absolute top-0 right-0 -mt-16 -mr-16 w-56 h-56 bg-cyan-focus/15 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute top-0 right-0 -mt-16 -mr-16 w-56 h-56 bg-nebula-violet/15 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute bottom-0 left-0 -mb-16 -ml-16 w-56 h-56 bg-emerald-highlight/15 rounded-full blur-3xl pointer-events-none" />
 
         {/* Scan line header */}
-        <div className="h-0.5 w-full bg-gradient-to-r from-transparent via-cyan-focus to-transparent mb-4 opacity-80" />
+        <div className="h-0.5 w-full bg-gradient-to-r from-transparent via-nebula-violet to-transparent mb-4 opacity-80" />
 
         {/* Header */}
-        <div className="flex items-start justify-between border-b border-cyan-focus/20 pb-4 mb-6">
+        <div className="flex items-start justify-between border-b border-nebula-violet/20 pb-4 mb-6">
           <div>
             <div className="flex items-center gap-2 mb-1.5">
               <span className="relative flex h-2.5 w-2.5">
@@ -67,12 +67,12 @@ export function ExitActionHub() {
                 SPEED RUN COMPLETE // ACTION HUB
               </span>
             </div>
-            <h2 className="text-xl sm:text-3xl font-bold text-white tracking-tight drop-shadow-[0_0_12px_rgba(56,189,248,0.4)]">
+            <h2 className="text-xl sm:text-3xl font-bold text-white tracking-tight drop-shadow-[0_0_12px_rgba(139,92,246,0.4)]">
               EVALUATION TOUR FINISHED
             </h2>
             <p className="mt-1.5 text-xs sm:text-sm text-slate-300 font-sans leading-relaxed">
               You have completed the automated 3D node tour for{" "}
-              <strong className="text-cyan-focus font-mono">{activeRole ?? "Selected Track"}</strong>.
+              <strong className="text-nebula-lavender font-mono">{activeRole ?? "Selected Track"}</strong>.
               Select a next step below to connect or continue exploring.
             </p>
           </div>
@@ -92,18 +92,18 @@ export function ExitActionHub() {
           <button
             onMouseEnter={() => playHoverSound()}
             onClick={handleDownloadResume}
-            className="group relative p-4 rounded-xl border border-cyan-focus/40 bg-slate-900/80 hover:bg-slate-900/90 text-left transition-all duration-200 hover:border-cyan-focus hover:shadow-[0_0_25px_rgba(56,189,248,0.35)] hover:-translate-y-0.5 active:translate-y-0 flex flex-col justify-between"
+            className="group relative p-4 rounded-xl border border-nebula-violet/40 bg-slate-900/80 hover:bg-slate-900/90 text-left transition-all duration-200 hover:border-nebula-violet hover:shadow-[0_0_25px_rgba(139,92,246,0.35)] hover:-translate-y-0.5 active:translate-y-0 flex flex-col justify-between"
           >
             <div>
               <div className="text-2xl mb-2">📄</div>
-              <h3 className="font-mono text-sm font-bold text-cyan-focus group-hover:text-white transition-colors">
+              <h3 className="font-mono text-sm font-bold text-nebula-lavender group-hover:text-white transition-colors">
                 Download Resume
               </h3>
               <p className="text-[11px] text-slate-300 font-sans mt-1">
                 Get full PDF resume & system experience details.
               </p>
             </div>
-            <span className="mt-3 text-[11px] font-mono text-cyan-focus font-bold flex items-center gap-1 group-hover:translate-x-1 transition-transform">
+            <span className="mt-3 text-[11px] font-mono text-nebula-lavender font-bold flex items-center gap-1 group-hover:translate-x-1 transition-transform">
               DOWNLOAD &darr;
             </span>
           </button>

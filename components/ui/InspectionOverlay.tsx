@@ -364,7 +364,7 @@ export function InspectionOverlay() {
         <div className="h-px w-full bg-gradient-to-r from-transparent via-cyan-focus to-transparent mb-1 opacity-60" />
 
         {/* Panel container */}
-        <div className="rounded-xl border border-cyan-focus/30 bg-slate-dark/95 shadow-[0_0_40px_rgba(56,189,248,0.15)] overflow-hidden">
+        <div className="rounded-xl border border-cyan-focus/30 bg-slate-dark/95 shadow-[0_0_40px_rgba(139,92,246,0.15)] overflow-hidden">
 
           {/* ── Top bar: id + advance tour + close button ──────────────── */}
           <div className="flex items-center justify-between border-b border-cyan-focus/15 px-5 py-3">

@@ -340,10 +340,50 @@ export function FlyingMascotCompanion() {
     }, durationMs);
   };
 
-  // Initial welcome speech on load
+  // Initial welcome speech on load (1.5s delay onboarding intro pointing to MENU)
   useEffect(() => {
     if (!isReady) return;
-    const initialTimer = setTimeout(triggerDialogueDuringBreak, 2500);
+    const initialTimer = setTimeout(() => {
+      const state = storeApi.getState();
+      if (
+        isHUDOpenRef.current ||
+        state.isMinigameOpen ||
+        state.isSpeedRunActive ||
+        state.isSolarTourActive
+      ) {
+        return;
+      }
+
+      const introItem: DialogueItem = {
+        id: "aria_onboarding_menu_intro",
+        category: "cadet_quips",
+        categoryLabel: "SYSTEM PROTOCOL",
+        badgeColor: "#8b5cf6",
+        text: "Greetings, Explorer! I'm ARIA. Click my MENU button above for a 30s Speed Run tour, AI chat, or the arcade minigame! 🚀",
+      };
+
+      setActiveDialogue(introItem);
+      setIsSpeechBubbleVisible(true);
+      lastSpeechTimeRef.current = performance.now();
+      playRetroSpeechBlip();
+      setIsMascotWiggling(true);
+      setTimeout(() => setIsMascotWiggling(false), 500);
+
+      // Keep speech bubble visible for 13s to ensure user notices and reads the guidance
+      const durationMs = 13000;
+      roamRef.current.restDuration = Math.max(
+        roamRef.current.restDuration,
+        roamRef.current.restElapsed + durationMs / 1000 + 2.5
+      );
+
+      if (speechDurationTimerRef.current) clearTimeout(speechDurationTimerRef.current);
+      speechDurationTimerRef.current = setTimeout(() => {
+        if (!bubbleHoveredRef.current) {
+          setIsSpeechBubbleVisible(false);
+        }
+      }, durationMs);
+    }, 1500);
+
     return () => {
       clearTimeout(initialTimer);
       if (speechDurationTimerRef.current) clearTimeout(speechDurationTimerRef.current);
@@ -772,12 +812,11 @@ export function FlyingMascotCompanion() {
     };
 
     const handleCustomInspect = (e: Event) => {
+      const detail = (e as CustomEvent)?.detail;
       const now = performance.now();
-      if (now - lastInspectTimeRef.current < 10000) return;
+      if (!detail?.force && now - lastInspectTimeRef.current < 10000) return;
       lastInspectTimeRef.current = now;
       lastActiveTimeRef.current = now;
-
-      const detail = (e as CustomEvent)?.detail;
       const quip = detail?.text || detail?.quip;
       if (!quip) return;
 
@@ -980,11 +1019,11 @@ export function FlyingMascotCompanion() {
         }
         if (reticleCircleRef.current) {
           reticleCircleRef.current.setAttribute("r", String(Math.max(8, currentRadius)));
-          reticleCircleRef.current.setAttribute("stroke", "#38bdf8");
+          reticleCircleRef.current.setAttribute("stroke", "#8b5cf6");
         }
         if (reticleLabelRef.current) {
           reticleLabelRef.current.innerText = `SUMMONING (${Math.round(progress * 100)}%)`;
-          reticleLabelRef.current.className = "absolute top-full left-1/2 -translate-x-1/2 mt-1.5 font-mono text-[9px] uppercase tracking-widest text-cyan-300 font-bold whitespace-nowrap bg-void-card/90 px-1.5 py-0.5 rounded border border-cyan-400/30";
+          reticleLabelRef.current.className = "absolute top-full left-1/2 -translate-x-1/2 mt-1.5 font-mono text-[9px] uppercase tracking-widest text-nebula-lavender font-bold whitespace-nowrap bg-void-card/90 px-1.5 py-0.5 rounded border border-nebula-violet/30";
         }
 
         // Full collapse completed at 450ms: Trigger lock-on and summon
@@ -2596,18 +2635,18 @@ export function FlyingMascotCompanion() {
             cy="50"
             r="44"
             fill="none"
-            stroke="#38bdf8"
+            stroke="#8b5cf6"
             strokeWidth="3"
             strokeDasharray="6 4"
             style={{
-              filter: "drop-shadow(0 0 8px rgba(56, 189, 248, 0.75))",
+              filter: "drop-shadow(0 0 8px rgba(139, 92, 246, 0.75))",
             }}
           />
-          <circle cx="50" cy="50" r="3.5" fill="#38bdf8" />
+          <circle cx="50" cy="50" r="3.5" fill="#8b5cf6" />
         </svg>
         <div
           ref={reticleLabelRef}
-          className="absolute top-full left-1/2 -translate-x-1/2 mt-1.5 font-mono text-[9px] uppercase tracking-widest text-cyan-300 font-bold whitespace-nowrap bg-void-card/90 px-1.5 py-0.5 rounded border border-cyan-400/30"
+          className="absolute top-full left-1/2 -translate-x-1/2 mt-1.5 font-mono text-[9px] uppercase tracking-widest text-nebula-lavender font-bold whitespace-nowrap bg-void-card/90 px-1.5 py-0.5 rounded border border-nebula-violet/30"
         >
           SUMMONING (0%)
         </div>
@@ -2848,7 +2887,7 @@ export function FlyingMascotCompanion() {
           onClick={skipCutscene}
           onTouchStart={skipCutscene}
         >
-          <div className="absolute bottom-6 right-6 font-mono text-[11px] font-bold text-slate-300/90 bg-slate-900/90 border border-cyan-400/50 shadow-[0_0_15px_rgba(34,211,238,0.4)] px-3 py-1.5 rounded-full backdrop-blur pointer-events-none select-none animate-pulse">
+          <div className="absolute bottom-6 right-6 font-mono text-[11px] font-bold text-slate-300/90 bg-slate-900/90 border border-nebula-violet/50 shadow-[0_0_15px_rgba(139,92,246,0.4)] px-3 py-1.5 rounded-full backdrop-blur pointer-events-none select-none animate-pulse">
             Click anywhere or press any key to skip ✕
           </div>
         </div>
@@ -2918,7 +2957,7 @@ export function FlyingMascotCompanion() {
           )}
         </div>
 
-        {/* ── Prominent Tethered Floating Cyberpunk MENU Button ── */}
+        {/* ── Permanently Visible Tethered Minimalist MENU Button ── */}
         <button
           id="aria-menu-btn"
           data-testid="aria-menu-btn"
@@ -2933,10 +2972,8 @@ export function FlyingMascotCompanion() {
           }}
           onPointerEnter={() => setIsHovered(true)}
           onPointerLeave={() => setIsHovered(false)}
-          className={`absolute -top-2.5 -right-3 z-[100003] px-2 py-0.5 rounded-md border-2 border-cyan-400 bg-slate-950/90 font-mono text-[11px] font-black text-cyan-300 tracking-wider shadow-[0_0_15px_rgba(34,211,238,0.6)] hover:shadow-[0_0_22px_rgba(34,211,238,0.9)] hover:border-cyan-300 hover:text-white hover:bg-slate-900 active:scale-95 transition-all duration-300 cursor-pointer minigame-cursor-native select-none animate-pulse ${
-            isNearCursor || isHovered || isHUDOpen
-              ? "opacity-100 scale-100 pointer-events-auto"
-              : "opacity-0 scale-90 pointer-events-none"
+          className={`absolute -top-2.5 -right-3 z-[100003] px-2 py-0.5 rounded-md border border-nebula-violet/80 bg-slate-950/95 font-mono text-[10px] font-bold text-nebula-lavender tracking-wider shadow-[0_0_12px_rgba(139,92,246,0.35)] hover:shadow-[0_0_18px_rgba(139,92,246,0.7)] hover:border-nebula-lavender hover:text-white hover:bg-slate-900 active:scale-95 transition-all duration-200 cursor-pointer minigame-cursor-native select-none opacity-100 scale-100 pointer-events-auto ${
+            isHUDOpen ? "bg-nebula-violet/30 text-white border-nebula-lavender" : ""
           }`}
           aria-label="ARIA Menu"
         >
@@ -2970,7 +3007,7 @@ export function FlyingMascotCompanion() {
         {tourSpeech && (
           <div
             data-tour-speech="true"
-            className={`absolute z-[100001] w-64 p-3.5 rounded-2xl bg-[#090d16]/95 border-2 border-cyan-400/90 shadow-[0_0_25px_rgba(56,189,248,0.4)] backdrop-blur-xl pointer-events-none duration-200 ${
+            className={`absolute z-[100001] w-64 p-3.5 rounded-2xl bg-[#090d16]/95 border-2 border-nebula-violet/90 shadow-[0_0_25px_rgba(139,92,246,0.4)] backdrop-blur-xl pointer-events-none duration-200 ${
               isNearTop
                 ? "top-full mt-3.5 animate-in fade-in slide-in-from-top-2"
                 : "bottom-full mb-3.5 animate-in fade-in slide-in-from-bottom-2"
@@ -2982,19 +3019,19 @@ export function FlyingMascotCompanion() {
                 : "left-1/2 -translate-x-1/2"
             }`}
           >
-            <div className="flex items-center gap-1.5 pb-1 mb-1 border-b border-cyan-400/20 font-mono text-[9px] uppercase tracking-widest text-starlight-gold font-bold">
-              <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
+            <div className="flex items-center gap-1.5 pb-1 mb-1 border-b border-nebula-violet/20 font-mono text-[9px] uppercase tracking-widest text-starlight-gold font-bold">
+              <span className="w-1.5 h-1.5 rounded-full bg-starlight-gold animate-pulse" />
               ARIA // PROTOCOL
             </div>
-            <p className="font-mono text-[11px] text-cyan-100 leading-snug font-medium">
+            <p className="font-mono text-[11px] text-slate-100 leading-snug font-medium">
               "{tourSpeech}"
             </p>
             {/* Downward or upward pointing triangle pointer */}
             <div
               className={`absolute w-0 h-0 border-x-6 border-x-transparent ${
                 isNearTop
-                  ? "bottom-full border-b-6 border-b-cyan-400/90"
-                  : "top-full border-t-6 border-t-cyan-400/90"
+                  ? "bottom-full border-b-6 border-b-nebula-violet/90"
+                  : "top-full border-t-6 border-t-nebula-violet/90"
               } ${
                 isNearLeft
                   ? "left-6"
@@ -3013,7 +3050,7 @@ export function FlyingMascotCompanion() {
             onPointerDown={(e) => e.stopPropagation()}
             onPointerUp={(e) => e.stopPropagation()}
             onClick={(e) => e.stopPropagation()}
-            className={`absolute w-60 rounded-2xl border-2 border-cyan-400/90 bg-[#090d16]/95 p-3.5 shadow-[0_0_35px_rgba(56,189,248,0.4)] backdrop-blur-2xl flex flex-col gap-2.5 font-mono text-xs z-50 pointer-events-auto transition-all ${
+            className={`absolute w-60 rounded-2xl border-2 border-nebula-violet/90 bg-[#090d16]/95 p-3.5 shadow-[0_0_35px_rgba(139,92,246,0.4)] backdrop-blur-2xl flex flex-col gap-2.5 font-mono text-xs z-50 pointer-events-auto transition-all ${
               isNearRight ? "right-full mr-3.5" : "left-full ml-3.5"
             } ${isNearBottom ? "bottom-0" : "top-0"}`}
           >
@@ -3028,7 +3065,7 @@ export function FlyingMascotCompanion() {
                   <polygon
                     points="0,0 12,7 0,14"
                     fill="#090d16"
-                    stroke="#38bdf8"
+                    stroke="#8b5cf6"
                     strokeWidth="2"
                     strokeLinejoin="round"
                   />
@@ -3036,7 +3073,7 @@ export function FlyingMascotCompanion() {
                   <polygon
                     points="14,0 2,7 14,14"
                     fill="#090d16"
-                    stroke="#38bdf8"
+                    stroke="#8b5cf6"
                     strokeWidth="2"
                     strokeLinejoin="round"
                   />
@@ -3045,9 +3082,9 @@ export function FlyingMascotCompanion() {
             </div>
 
             {/* Header */}
-            <div className="flex items-center justify-between border-b border-cyan-400/20 pb-2 mb-0.5">
-              <span className="text-[10px] font-bold tracking-widest uppercase text-cyan-300 flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
+            <div className="flex items-center justify-between border-b border-nebula-violet/20 pb-2 mb-0.5">
+              <span className="text-[10px] font-bold tracking-widest uppercase text-nebula-lavender flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-starlight-gold animate-ping" />
                 ARIA COMMAND
               </span>
               <button
@@ -3078,13 +3115,13 @@ export function FlyingMascotCompanion() {
             <button
               onClick={(e) => handleOpenAIChat(e)}
               onPointerDown={(e) => e.stopPropagation()}
-              className="flex items-center justify-between px-3 py-2.5 rounded-xl bg-cyan-500/20 border border-cyan-400/50 text-cyan-200 hover:bg-cyan-500/35 hover:border-cyan-400/80 hover:shadow-[0_0_15px_rgba(56,189,248,0.3)] transition-all active:scale-95 text-[11px] font-bold cursor-pointer minigame-cursor-native"
+              className="flex items-center justify-between px-3 py-2.5 rounded-xl bg-pulsar-indigo/25 border border-pulsar-indigo/60 text-indigo-200 hover:bg-pulsar-indigo/40 hover:border-pulsar-indigo/80 hover:shadow-[0_0_15px_rgba(99,102,241,0.3)] transition-all active:scale-95 text-[11px] font-bold cursor-pointer minigame-cursor-native"
             >
               <span className="flex items-center gap-2">
                 <span>💬</span>
                 <span>Chat</span>
               </span>
-              <span className="text-[10px] text-cyan-400">➔</span>
+              <span className="text-[10px] text-pulsar-indigo">➔</span>
             </button>
 
             <button

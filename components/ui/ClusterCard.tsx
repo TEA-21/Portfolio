@@ -15,7 +15,7 @@ import { ALL_PROJECTS, type Category } from "@/lib/projects";
 /* ── Per-accent color palettes ─────────────────────────────────────── */
 const ACCENT = {
   cyan: {
-    hex:      "#38bdf8",
+    hex:      "#8b5cf6",
     border:   "border-cyan-focus/40",
     glow:     "shadow-[0_0_30px_rgba(56,189,248,0.18)]",
     hoverGlow:"hover:shadow-[0_0_40px_rgba(56,189,248,0.35)]",

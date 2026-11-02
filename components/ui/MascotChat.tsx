@@ -52,7 +52,7 @@ const NODE_POSITIONS: Record<string, { x: number; y: number; z: number }> = {
 
 const markdownComponents = {
   h1: ({ children }: any) => (
-    <h1 className="text-xs font-bold text-cyan-300 uppercase tracking-wider mt-2 mb-1 border-b border-cyan-500/20 pb-0.5">
+    <h1 className="text-xs font-bold text-nebula-lavender uppercase tracking-wider mt-2 mb-1 border-b border-nebula-violet/30 pb-0.5">
       {children}
     </h1>
   ),
@@ -68,12 +68,12 @@ const markdownComponents = {
   ),
   p: ({ children }: any) => <p className="mb-1.5 last:mb-0 leading-relaxed">{children}</p>,
   strong: ({ children }: any) => <strong className="font-bold text-white tracking-wide">{children}</strong>,
-  em: ({ children }: any) => <em className="italic text-cyan-200">{children}</em>,
-  ul: ({ children }: any) => <ul className="space-y-1 my-1.5 pl-3 list-disc marker:text-cyan-400">{children}</ul>,
+  em: ({ children }: any) => <em className="italic text-nebula-lavender">{children}</em>,
+  ul: ({ children }: any) => <ul className="space-y-1 my-1.5 pl-3 list-disc marker:text-nebula-violet">{children}</ul>,
   ol: ({ children }: any) => <ol className="space-y-1 my-1.5 pl-3 list-decimal marker:text-starlight-gold">{children}</ol>,
   li: ({ children }: any) => <li className="pl-0.5 leading-relaxed">{children}</li>,
   code: ({ children }: any) => (
-    <code className="font-mono text-[10px] bg-void-black/80 text-cyan-300 px-1 py-0.5 rounded border border-cyan-500/30">
+    <code className="font-mono text-[10px] bg-void-black/80 text-nebula-lavender px-1 py-0.5 rounded border border-nebula-violet/30">
       {children}
     </code>
   ),
@@ -82,7 +82,7 @@ const markdownComponents = {
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      className="text-cyan-400 hover:text-cyan-200 underline decoration-cyan-400/50 hover:decoration-cyan-200"
+      className="text-nebula-lavender hover:text-white underline decoration-nebula-violet/50 hover:decoration-white"
     >
       {children}
     </a>

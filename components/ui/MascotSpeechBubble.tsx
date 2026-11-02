@@ -79,10 +79,10 @@ export function MascotSpeechBubble({
           e.stopPropagation();
           onCycle();
         }}
-        className="relative group rounded-2xl bg-[#090d16]/95 border-2 border-cyan-400/90 shadow-[0_0_30px_rgba(56,189,248,0.35)] backdrop-blur-xl p-3.5 cursor-pointer active:scale-[0.98] transition-transform"
+        className="relative group rounded-2xl bg-[#090d16]/95 border-2 border-nebula-violet/90 shadow-[0_0_30px_rgba(139,92,246,0.35)] backdrop-blur-xl p-3.5 cursor-pointer active:scale-[0.98] transition-transform"
       >
         {/* Top Header: Category Tag & Dismiss Button */}
-        <div className="flex items-center justify-between pb-1.5 mb-1.5 border-b border-cyan-400/20">
+        <div className="flex items-center justify-between pb-1.5 mb-1.5 border-b border-nebula-violet/20">
           <div className="flex items-center gap-1.5">
             <span
               className="w-2 h-2 rounded-full animate-ping"
@@ -113,13 +113,13 @@ export function MascotSpeechBubble({
         </div>
 
         {/* Dialogue Main Text */}
-        <p className="font-mono text-[11.5px] leading-relaxed text-cyan-50 font-medium tracking-normal select-none">
+        <p className="font-mono text-[11.5px] leading-relaxed text-slate-100 font-medium tracking-normal select-none">
           "{dialogue.text}"
         </p>
 
         {/* Action Hint Footer */}
         <div className="flex items-center justify-between mt-2 pt-1 border-t border-white/5 font-mono text-[8.5px] text-slate-400 uppercase tracking-wider">
-          <span className="group-hover:text-cyan-300 transition-colors">
+          <span className="group-hover:text-nebula-lavender transition-colors">
             ✦ Click to cycle
           </span>
           <span className="text-slate-500">
@@ -145,7 +145,7 @@ export function MascotSpeechBubble({
               <polygon
                 points="10,0 20,10 0,10"
                 fill="#090d16"
-                stroke="#38bdf8"
+                stroke="#8b5cf6"
                 strokeWidth="2"
                 strokeLinejoin="round"
               />
@@ -169,7 +169,7 @@ export function MascotSpeechBubble({
               <polygon
                 points="0,0 20,0 10,10"
                 fill="#090d16"
-                stroke="#38bdf8"
+                stroke="#8b5cf6"
                 strokeWidth="2"
                 strokeLinejoin="round"
               />

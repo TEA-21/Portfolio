@@ -161,7 +161,7 @@ export const PixelAstronaut = memo(function PixelAstronaut({
       {/* ── Transmitting Radio Rings ───────────────────────────────── */}
       {isTransmitting && (
         <div className="absolute -top-3 left-1/2 -translate-x-1/2 pointer-events-none flex items-center justify-center">
-          <span className="absolute w-8 h-8 rounded-full border border-cyan-400/80 animate-ping opacity-75" />
+          <span className="absolute w-8 h-8 rounded-full border border-nebula-violet/80 animate-ping opacity-75" />
           <span className="absolute w-12 h-12 rounded-full border border-starlight-gold/60 animate-pulse" />
         </div>
       )}
@@ -183,7 +183,7 @@ export const PixelAstronaut = memo(function PixelAstronaut({
       >
         <defs>
           <filter id="chibi-cyan-glow" x="-20%" y="-20%" width="140%" height="140%">
-            <feDropShadow dx="0" dy="0" stdDeviation="0.8" floodColor="#00F5FF" floodOpacity="0.9" />
+            <feDropShadow dx="0" dy="0" stdDeviation="0.8" floodColor="#C4B5FD" floodOpacity="0.9" />
           </filter>
         </defs>
 
@@ -198,8 +198,8 @@ export const PixelAstronaut = memo(function PixelAstronaut({
             <path d="M6 24h3v5H6zM23 24h3v5h-3z" fill="#F97316" />
             {/* Inner Gold Flame */}
             <path d="M6 24h3v3H6zM23 24h3v3h-3z" fill="#FACC15" />
-            {/* Hot Cyan Plasma Tip */}
-            <path d="M7 28h1v2H7zM24 28h1v2h-1z" fill="#00F5FF" />
+            {/* Hot Gold Plasma Tip */}
+            <path d="M7 28h1v2H7zM24 28h1v2h-1z" fill="#FEF08A" />
           </g>
         )}
 
@@ -210,20 +210,20 @@ export const PixelAstronaut = memo(function PixelAstronaut({
             d="M8 19h3v1H8zm-3 2h4v1H5zm-3 2h4v1H2zm-1 2h3v1H1z"
             fill="#090D16"
           />
-          {/* Nebula Violet Shadow */}
+          {/* Deep Violet Shadow */}
           <path
             d="M8 21h3v1H8zm-3 2h4v1H5zm-2 2h3v1H3z"
-            fill="#8B5CF6"
+            fill="#6D28D9"
           />
-          {/* Electric Cyan Main Fabric */}
+          {/* Nebula Violet Main Fabric */}
           <path
             d="M8 20h3v1H8zm-3 1h4v2H5zm-3 2h3v2H2z"
-            fill="#06B6D4"
+            fill="#8B5CF6"
           />
-          {/* Starlight Cyan Top Highlight */}
+          {/* Luminous Lavender Top Highlight */}
           <path
             d="M9 20h2v1H9zm-3 1h3v1H6zm-3 2h2v1H3z"
-            fill="#00F5FF"
+            fill="#C4B5FD"
           />
         </g>
 
@@ -268,10 +268,10 @@ export const PixelAstronaut = memo(function PixelAstronaut({
           fill="#0F172A"
         />
 
-        {/* 9. PILOT NEON CYAN HAIR HIGHLIGHTS (#00F5FF) */}
+        {/* 9. PILOT NEON LAVENDER HAIR HIGHLIGHTS (#C4B5FD) */}
         <path
           d="M13 5h2v1h-2zm4 0h2v1h-2zm-3 1h2v1h-2zm6 0h2v1h-2zm-5 2h2v1h-2z"
-          fill="#00F5FF"
+          fill="#C4B5FD"
         />
 
         {/* 10. ROSY CHEEK BLUSH (#FB7185) */}
@@ -317,8 +317,8 @@ export const PixelAstronaut = memo(function PixelAstronaut({
           <g>
             <path d="M9 11h6v5H9zm8 0h6v5h-6z" fill="#FFFFFF" />
             <path d="M10 12h4v4h-4zm8 0h4v4h-4z" fill="#090D16" />
-            <path d="M11 14h2v2h-2zm8 0h2v2h-2z" fill="#00F5FF" filter="url(#chibi-cyan-glow)" />
-            <path d="M7 14h18v1H7z" fill="#00F5FF" opacity="0.8" className="animate-pulse" filter="url(#chibi-cyan-glow)" />
+            <path d="M11 14h2v2h-2zm8 0h2v2h-2z" fill="#C4B5FD" filter="url(#chibi-cyan-glow)" />
+            <path d="M7 14h18v1H7z" fill="#C4B5FD" opacity="0.8" className="animate-pulse" filter="url(#chibi-cyan-glow)" />
           </g>
         ) : isWaving ? (
           /* Joyful Closed Anime Crescent Eyes (^ ^) */
@@ -338,8 +338,8 @@ export const PixelAstronaut = memo(function PixelAstronaut({
               d="M10 12h1v1h1v1h-1v1h-1v-1h1v-1h-1zm3 0h1v1h-1v1h1v1h-1v-1h-1v-1h1zM18 12h1v1h1v1h-1v1h-1v-1h1v-1h-1zm3 0h1v1h-1v1h1v1h-1v-1h-1v-1h1z"
               fill="#090D16"
             />
-            {/* Center Cyan Spark */}
-            <path d="M12 13h1v1h-1zM20 13h1v1h-1z" fill="#00F5FF" />
+            {/* Center Lavender Spark */}
+            <path d="M12 13h1v1h-1zM20 13h1v1h-1z" fill="#C4B5FD" />
           </g>
         ) : isDragging ? (
           /* Shocked Round Eyes (O_O) with Pinpoint Pupils */
@@ -349,7 +349,7 @@ export const PixelAstronaut = memo(function PixelAstronaut({
             {/* Pinpoint Dark Pupils */}
             <path d="M11 12h2v2h-2zM19 12h2v2h-2z" fill="#090D16" />
             {/* Visor Panic Sweat Drops */}
-            <path d="M24 7h1v2h-1zm1 1h1v3h-1z" fill="#00F5FF" />
+            <path d="M24 7h1v2h-1zm1 1h1v3h-1z" fill="#C4B5FD" />
           </g>
         ) : isThrusting ? (
           /* Fierce Slanted Fast Sprint Eyes */
@@ -363,10 +363,10 @@ export const PixelAstronaut = memo(function PixelAstronaut({
             />
             {/* Sprint Pupils */}
             <path d="M11 12h4v4h-4zM17 12h4v4h-4z" fill="#090D16" />
-            {/* Cyan Sparks */}
+            {/* Lavender Sparks */}
             <path
               d="M12 13h2v2h-2zM18 13h2v2h-2z"
-              fill="#00F5FF"
+              fill="#C4B5FD"
               filter="url(#chibi-cyan-glow)"
             />
             {/* White Catchlight */}
@@ -389,7 +389,7 @@ export const PixelAstronaut = memo(function PixelAstronaut({
                 <path d="M9 11h4v5H9zm8 0h4v5h-4z" fill="#090D16" />
                 <path
                   d="M10 13h2v2h-2zm8 0h2v2h-2z"
-                  fill="#00F5FF"
+                  fill="#C4B5FD"
                   filter="url(#chibi-cyan-glow)"
                 />
                 <path d="M9 11h2v2H9zm8 0h2v2h-2zm2 3h1v1h-1zm8 0h1v1h-1z" fill="#FFFFFF" />
@@ -399,7 +399,7 @@ export const PixelAstronaut = memo(function PixelAstronaut({
                 <path d="M11 11h4v5h-4zm8 0h4v5h-4z" fill="#090D16" />
                 <path
                   d="M12 13h2v2h-2zm8 0h2v2h-2z"
-                  fill="#00F5FF"
+                  fill="#C4B5FD"
                   filter="url(#chibi-cyan-glow)"
                 />
                 <path d="M11 11h2v2h-2zm8 0h2v2h-2zm2 3h1v1h-1zm8 0h1v1h-1z" fill="#FFFFFF" />
@@ -409,7 +409,7 @@ export const PixelAstronaut = memo(function PixelAstronaut({
                 <path d="M10 11h4v4h-4zm8 0h4v4h-4z" fill="#090D16" />
                 <path
                   d="M11 12h2v2h-2zm8 0h2v2h-2z"
-                  fill="#00F5FF"
+                  fill="#C4B5FD"
                   filter="url(#chibi-cyan-glow)"
                 />
                 <path d="M10 11h2v2h-2zm8 0h2v2h-2z" fill="#FFFFFF" />
@@ -419,7 +419,7 @@ export const PixelAstronaut = memo(function PixelAstronaut({
                 <path d="M10 12h4v4h-4zm8 0h4v4h-4z" fill="#090D16" />
                 <path
                   d="M11 14h2v2h-2zm8 0h2v2h-2z"
-                  fill="#00F5FF"
+                  fill="#C4B5FD"
                   filter="url(#chibi-cyan-glow)"
                 />
                 <path d="M10 12h2v2h-2zm8 0h2v2h-2z" fill="#FFFFFF" />
@@ -430,7 +430,7 @@ export const PixelAstronaut = memo(function PixelAstronaut({
                 <path d="M10 11h4v5h-4zm8 0h4v5h-4z" fill="#090D16" />
                 <path
                   d="M11 13h2v2h-2zm8 0h2v2h-2z"
-                  fill="#00F5FF"
+                  fill="#C4B5FD"
                   filter="url(#chibi-cyan-glow)"
                 />
                 <path d="M10 11h2v2h-2zm8 0h2v2h-2zm2 3h1v1h-1zm8 0h1v1h-1z" fill="#FFFFFF" />
@@ -441,7 +441,7 @@ export const PixelAstronaut = memo(function PixelAstronaut({
             {isTransmitting && (
               <path
                 d="M7 13h18v1H7z"
-                fill="#00F5FF"
+                fill="#C4B5FD"
                 className="animate-pulse"
                 filter="url(#chibi-cyan-glow)"
               />
@@ -472,7 +472,7 @@ export const PixelAstronaut = memo(function PixelAstronaut({
           /* Focused Sprint Clenched Intake Breath Line */
           <g>
             <path d="M14 17h4v1h-4z" fill="#090D16" />
-            <path d="M15 17h2v1h-2z" fill="#00F5FF" />
+            <path d="M15 17h2v1h-2z" fill="#C4B5FD" />
           </g>
         ) : isSpinning ? (
           /* Dizzy Mouth */
@@ -484,7 +484,7 @@ export const PixelAstronaut = memo(function PixelAstronaut({
           /* Curious Focused Smirk */
           <g>
             <path d="M15 17h2v1h-2z" fill="#090D16" />
-            <path d="M16 17h1v1h-1z" fill="#00F5FF" />
+            <path d="M16 17h1v1h-1z" fill="#C4B5FD" />
           </g>
         ) : (
           /* Standard Cute Anime Mouth */
@@ -498,13 +498,13 @@ export const PixelAstronaut = memo(function PixelAstronaut({
           opacity="0.8"
         />
 
-        {/* 14. COMPACT TORSO DETAILS (Neon Cyan Harness & Starlight Diamond Core) */}
-        {/* Neon Cyan Harness Piping */}
-        <path d="M12 20h1v4h-1zm7 0h1v4h-1z" fill="#00F5FF" />
+        {/* 14. COMPACT TORSO DETAILS (Luminous Lavender Harness & Starlight Diamond Core) */}
+        {/* Luminous Lavender Harness Piping */}
+        <path d="M12 20h1v4h-1zm7 0h1v4h-1z" fill="#C4B5FD" />
         {/* Glowing Arc Reactor Diamond Core */}
         <path
           d="M15 21h2v2h-2z"
-          fill="#00F5FF"
+          fill="#C4B5FD"
           filter="url(#chibi-cyan-glow)"
           className={isTransmitting ? "animate-pulse" : ""}
         />
@@ -520,8 +520,8 @@ export const PixelAstronaut = memo(function PixelAstronaut({
         )}
 
         {/* 16. CHUNKY LEGS & MAGNETIC GOLD BOOTS */}
-        {/* Neon Cyan Knee Stripes */}
-        <path d="M11 26h4v1h-4zm6 0h4v1h-4z" fill="#00F5FF" />
+        {/* Lavender Knee Stripes */}
+        <path d="M11 26h4v1h-4zm6 0h4v1h-4z" fill="#C4B5FD" />
         {/* Magnetic Gold Boot Soles */}
         <path d="M9 30h6v1H9zm8 0h6v1h-6z" fill="#FACC15" />
         <path d="M9 29h1v1H9zm13 0h1v1h-1z" fill="#D97706" />
@@ -530,7 +530,7 @@ export const PixelAstronaut = memo(function PixelAstronaut({
         <path d="M15 1h2v2h-2z" fill="#64748B" />
         <path
           d="M15 0h2v1h-2z"
-          fill={isTransmitting ? "#00F5FF" : "#FACC15"}
+          fill={isTransmitting ? "#C4B5FD" : "#FACC15"}
           className={isTransmitting ? "animate-ping" : ""}
           filter={isTransmitting ? "url(#chibi-cyan-glow)" : undefined}
         />
@@ -555,15 +555,15 @@ export const PixelAstronaut = memo(function PixelAstronaut({
         {isSnoozing && (
           <g className="animate-bounce">
             <path d="M22 3h3v1l-2 2h2v1h-3v-1l2-2h-2z" fill="#FACC15" />
-            <path d="M24 0h2v1l-1 1h1v1h-2v-1l1-1h-1z" fill="#00F5FF" opacity="0.8" />
+            <path d="M24 0h2v1l-1 1h1v1h-2v-1l1-1h-1z" fill="#C4B5FD" opacity="0.8" />
           </g>
         )}
 
-        {/* 21. SCANNING HOLOGRAPHIC CYAN SCANNER CONE (Scan Pose) */}
+        {/* 21. SCANNING HOLOGRAPHIC LAVENDER SCANNER CONE (Scan Pose) */}
         {isScanning && (
           <g>
-            <path d="M11 16L6 29h20l-5-13z" fill="#00F5FF" opacity="0.25" filter="url(#chibi-cyan-glow)" />
-            <path d="M9 22h14v1H9zm-2 4h18v1H7z" fill="#00F5FF" opacity="0.6" />
+            <path d="M11 16L6 29h20l-5-13z" fill="#C4B5FD" opacity="0.25" filter="url(#chibi-cyan-glow)" />
+            <path d="M9 22h14v1H9zm-2 4h18v1H7z" fill="#C4B5FD" opacity="0.6" />
           </g>
         )}
       </svg>

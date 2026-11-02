@@ -1087,11 +1087,13 @@ function TourCameraOrchestrator({
 export interface PlanetarySolarSystemProps {
   onSelectProject: (id: string) => void;
   speedMultiplier?: number;
+  isInteractive?: boolean;
 }
 
 export function PlanetarySolarSystem({
   onSelectProject,
   speedMultiplier = 1,
+  isInteractive = true,
 }: PlanetarySolarSystemProps) {
   const [hoveredHubId, setHoveredHubId] = React.useState<string | null>(null);
   const [hoveredProjectId, setHoveredProjectId] = React.useState<string | null>(null);
@@ -1166,10 +1168,10 @@ export function PlanetarySolarSystem({
       >
         <OrbitControls
           ref={controlsRef}
-          enabled={!isSolarTourActive}
+          enabled={isInteractive && !isSolarTourActive}
           enablePan={false}
-          enableRotate={true}
-          enableZoom={true}
+          enableRotate={isInteractive}
+          enableZoom={isInteractive}
           minDistance={6}
           maxDistance={38}
           minPolarAngle={0.05}

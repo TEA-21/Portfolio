@@ -21,7 +21,7 @@
  *    and top control panel with orbital speed controls ([ PAUSE ], [ 1x SPEED ], [ 2x SPEED ]).
  */
 
-import { useState, useMemo, useEffect, useCallback } from "react";
+import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import dynamic from "next/dynamic";
 import { DYNAMIC_CATEGORIES, ALL_PROJECTS, type Project } from "@/lib/projects";
 import { playHoverSound, playSelectSound, playTransitionSound } from "@/lib/audio";
@@ -64,6 +64,10 @@ export function ProjectWebGraph() {
   const nextSpeedRunStep = usePortfolioStore((s) => s.nextSpeedRunStep);
   const endSpeedRunTour = usePortfolioStore((s) => s.endSpeedRunTour);
   const [speedMultiplier, setSpeedMultiplier] = useState<number>(1);
+  const [isControlsEngaged, setIsControlsEngaged] = useState<boolean>(false);
+  const canvasContainerRef = useRef<HTMLDivElement>(null);
+
+  const isEngaged = isControlsEngaged || isSolarTourActive || isSpeedRunActive;
 
   const selectedProject = useMemo(() => {
     if (!selectedProjectId) return null;
@@ -78,17 +82,61 @@ export function ProjectWebGraph() {
     }
   }, [isSpeedRunActive, setSelectedProjectId, endSpeedRunTour]);
 
-  // Global Escape key listener to dismiss the modal
+  const handleEngageControls = useCallback(() => {
+    playSelectSound();
+    setIsControlsEngaged(true);
+    window.dispatchEvent(
+      new CustomEvent("mascot-inspect-component", {
+        detail: {
+          text: "Entering Galactic Supernova Project Core! Choose an orbit to inspect.",
+          force: true,
+        },
+      })
+    );
+  }, []);
+
+  const handleDetachControls = useCallback(() => {
+    playSelectSound();
+    setIsControlsEngaged(false);
+  }, []);
+
+  // Global Escape key listener: dismisses open modal first, else detaches pilot controls
   useEffect(() => {
-    if (!selectedProjectId) return;
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
-        handleCloseModal();
+        if (selectedProjectId) {
+          handleCloseModal();
+        } else if (isControlsEngaged) {
+          handleDetachControls();
+        }
       }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [selectedProjectId, handleCloseModal]);
+  }, [selectedProjectId, isControlsEngaged, handleCloseModal, handleDetachControls]);
+
+  // Auto-detach controls when scrolling far outside canvas view
+  useEffect(() => {
+    if (!isControlsEngaged || selectedProjectId) return;
+    const container = canvasContainerRef.current;
+    if (!container) return;
+
+    let wasIntersecting = false;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          wasIntersecting = true;
+        } else if (wasIntersecting) {
+          // Only detach after container was confirmed visible and user scrolled away
+          setIsControlsEngaged(false);
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, [isControlsEngaged, selectedProjectId]);
 
   return (
     <section
@@ -97,14 +145,33 @@ export function ProjectWebGraph() {
       className="relative w-full px-2 sm:px-6 lg:px-12 py-16 min-h-screen bg-transparent overflow-hidden select-none"
     >
       {/* Main Console Container */}
-      <div className="relative z-10 max-w-[1360px] mx-auto flex flex-col gap-4">
+      <div className="relative z-10 max-w-[1360px] mx-auto flex flex-col gap-6">
 
-        {/* ── Main 3D Constellation Canvas (Transparent Background so stars shine through) ── */}
-        <div className="relative w-full h-[680px] rounded-3xl border border-white/10 bg-transparent overflow-hidden">
+        {/* ── Section Header (Featured Systems & Repositories) ── */}
+        <div className="flex flex-col gap-2.5 pb-2">
+          <div className="flex items-center gap-2">
+            <span className="h-1.5 w-1.5 rounded-full bg-nebula-violet animate-pulse" />
+            <span className="font-mono text-[11px] uppercase tracking-[0.25em] text-nebula-lavender">
+              ORBITAL OBSERVATORY · 12 REPOSITORIES & 5 DOMAINS
+            </span>
+          </div>
+          <h2 className="font-mono text-3xl sm:text-4xl font-bold tracking-tight text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.95)]">
+            FEATURED SYSTEMS & REPOSITORIES
+          </h2>
+          <p className="font-sans text-sm sm:text-base text-slate-300 max-w-2xl leading-relaxed drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]">
+            Interactive multi-tier orbital model mapping core architectures from deep learning pipelines to decentralized security protocols.
+          </p>
+        </div>
+
+        {/* ── Main 3D Constellation Canvas ── */}
+        <div
+          ref={canvasContainerRef}
+          className="relative w-full h-[680px] rounded-3xl border border-white/10 bg-transparent overflow-hidden group"
+        >
           {/* ═══════════════════════════════════════════════════════════════ */}
           {/* ── 3D THREE.JS SOLAR SYSTEM ENGINE ── */}
           {/* ═══════════════════════════════════════════════════════════════ */}
-          <div className="absolute inset-0 w-full h-full">
+          <div className={`absolute inset-0 w-full h-full ${isEngaged ? "pointer-events-auto" : "pointer-events-none"}`}>
             <PlanetarySolarSystem
               onSelectProject={(id) => {
                 playSelectSound();
@@ -112,8 +179,46 @@ export function ProjectWebGraph() {
                 setSelectedProjectId(id);
               }}
               speedMultiplier={speedMultiplier}
+              isInteractive={isEngaged}
             />
           </div>
+
+          {/* ── Observation Deck Ambient CTA Overlay (Inactive State) ── */}
+          {!isEngaged && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center p-4 bg-void-black/30 backdrop-blur-[1px] pointer-events-none transition-all duration-300">
+              <button
+                type="button"
+                onClick={handleEngageControls}
+                onMouseEnter={() => playHoverSound()}
+                className="pointer-events-auto group/btn flex items-center gap-3 px-6 py-3.5 rounded-2xl border border-nebula-violet/60 bg-slate-950/85 font-mono text-xs font-bold text-nebula-lavender shadow-[0_0_25px_rgba(139,92,246,0.35)] hover:shadow-[0_0_35px_rgba(139,92,246,0.6)] hover:border-nebula-violet hover:text-white hover:bg-slate-900 hover:scale-105 active:scale-95 transition-all duration-300 cursor-pointer backdrop-blur-md"
+              >
+                <span className="w-2 h-2 rounded-full bg-nebula-violet animate-ping" />
+                <span className="tracking-wider uppercase">ENTER ORBITAL SYSTEM</span>
+                <span className="text-starlight-gold group-hover/btn:translate-x-1 transition-transform">➔</span>
+              </button>
+              <span className="font-mono text-[10px] text-slate-400 mt-2.5 tracking-wider uppercase drop-shadow">
+                Observational Deck · Click to pilot 3D camera & zoom into orbits
+              </span>
+            </div>
+          )}
+
+          {/* ── Floating Pilot Mode Detach Button (Active State) ── */}
+          {isEngaged && !isSolarTourActive && !isSpeedRunActive && (
+            <div className="absolute top-4 right-4 z-20 flex items-center gap-2 pointer-events-auto animate-fade-in">
+              <button
+                type="button"
+                onClick={handleDetachControls}
+                onMouseEnter={() => playHoverSound()}
+                className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl border border-white/20 bg-void-black/85 font-mono text-[11px] font-bold text-slate-300 hover:text-white hover:border-rose-400/60 hover:bg-rose-500/15 shadow-[0_4px_20px_rgba(0,0,0,0.6)] backdrop-blur-md transition-all active:scale-95 cursor-pointer"
+                title="Return to Observation Deck (Escape)"
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                <span>PILOT MODE</span>
+                <span className="text-slate-500">|</span>
+                <span className="text-rose-400 font-semibold">[ DETACH (ESC) ✕ ]</span>
+              </button>
+            </div>
+          )}
         </div>
 
         {/* ── Speed Control ── */}
@@ -298,9 +403,9 @@ export function ProjectWebGraph() {
 
             {/* ── Dedicated Speed Run Tour Navigation Bar ── */}
             {isSpeedRunActive && (
-              <div className="flex items-center justify-between border-t border-cyan-400/30 pt-3 mt-1 bg-void-black/70 -mx-7 -mb-7 p-4 px-7 rounded-b-2xl">
+              <div className="flex items-center justify-between border-t border-nebula-violet/30 pt-3 mt-1 bg-void-black/70 -mx-7 -mb-7 p-4 px-7 rounded-b-2xl">
                 <span className="font-mono text-xs font-bold text-starlight-gold flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
+                  <span className="w-2 h-2 rounded-full bg-nebula-violet animate-pulse" />
                   [ TOUR STEP {speedRunStepIndex + 1} OF {speedRunProjects.length} ]
                 </span>
                 <div className="flex items-center gap-3">
@@ -321,7 +426,7 @@ export function ProjectWebGraph() {
                         playTransitionSound();
                         nextSpeedRunStep();
                       }}
-                      className="font-mono text-xs font-bold px-4 py-1.5 rounded-xl border border-cyan-400/60 bg-cyan-500/20 text-cyan-200 hover:bg-cyan-500/35 hover:shadow-[0_0_15px_rgba(56,189,248,0.4)] transition-all cursor-pointer"
+                      className="font-mono text-xs font-bold px-4 py-1.5 rounded-xl border border-nebula-violet/60 bg-nebula-violet/20 text-nebula-lavender hover:bg-nebula-violet/35 hover:shadow-[0_0_15px_rgba(139,92,246,0.4)] transition-all cursor-pointer"
                     >
                       [ NEXT PROJECT ➔ ]
                     </button>
